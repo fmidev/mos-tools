@@ -13,7 +13,7 @@ class MosWorker
 {
 public:
 	~MosWorker();
-	double Mosh(const MosInfo& mosInfo, int step);
+	bool Mosh(const MosInfo& mosInfo, int step);
 	std::unique_ptr<MosDB> itsMosDB;
 	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
 private:

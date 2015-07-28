@@ -171,9 +171,6 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 
 	Query(query.str());
 
-	Weight w;
-	Station s;
-
 	while (true)
 	{
 		row = FetchRow();
@@ -182,7 +179,10 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 		{
 			break;
 		}
+#ifdef EXTRADEBUG		
 		for (size_t i = 0;i < row.size();i++) std::cout << i << " " << row[i] << std::endl;
+#endif
+
 		std::vector<std::string> weightkeysstr, weightvalsstr;
 		
 		boost::trim_if(row[0], boost::is_any_of("{}")); // remove {} that come from database as column if of type "array"
@@ -190,6 +190,9 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 		
 		boost::split(weightkeysstr, row[0], boost::is_any_of(","));
 		boost::split(weightvalsstr, row[1], boost::is_any_of(","));
+
+		Weight w;
+		Station s;
 
 		w.weights.resize(weightkeysstr.size(), 0);
 
@@ -229,20 +232,23 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 		s.latitude = boost::lexical_cast<double> (row[3]);
 		s.longitude = boost::lexical_cast<double> (row[4]);
 		s.name = row[5];
-	}
-	
-	if (!w.params.empty()) weights[s] = w;
+		
+		assert(w.params.size() == w.weights.size());
 
-	assert(w.params.size() == w.weights.size());
+		if (!w.params.empty()) weights[s] = w;
+	}
+
+//	std::cout << w.params.size() << " vs " << w.weights.size() << std::endl;
 	
-#ifdef DEBUG
-	std::string periodInfo = "current";
+	if (mosInfo.traceOutput)
+	{
+		std::string periodInfo = "current";
 	
-	if (relativity < 0.5) periodInfo = "previous";
-	else if (relativity > 0.5) periodInfo = "next";
+		if (relativity < 0.5) periodInfo = "previous";
+		else if (relativity > 0.5) periodInfo = "next";
 	
-	std::cout << "Read " << periodInfo << " period weights for " << weights.size() << " stations" << std::endl;
-#endif
+		std::cout << "Read " << periodInfo << " period weights for " << weights.size() << " stations" << std::endl;
+	}
 	
 	return weights;
 }
