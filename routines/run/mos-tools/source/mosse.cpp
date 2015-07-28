@@ -23,7 +23,8 @@ struct Options
 	std::string paramName;
 	
 	bool sineWaveTransition;
-	
+	bool trace;
+
 	Options()
 		: threadCount(1)
 		, startStep(-1)
@@ -33,6 +34,7 @@ struct Options
 		, mosLabel("")
 		, paramName("")
 		, sineWaveTransition(false)
+		, trace(false)
 	{}
 };
 
@@ -53,7 +55,8 @@ void ParseCommandLine(int argc, char ** argv)
 	("step-length,l", po::value(&opts.stepLength), "step length")
 	("station-id,S", po::value(&opts.stationId), "station id, comma separated list")
 	("parameter,p", po::value(&opts.paramName), "parameter name (neons-style)")
-	("sine", "apply weight transition between periods using sine wave factor")
+	("sine", "apply weight transition between periods using sine wave factor (default false)")
+	("trace", "write trace information to log and database (default false)")
 	//("radon,R", "use only radon database")
 	//("neons,N", "use only neons database")
 	;
@@ -75,14 +78,18 @@ void ParseCommandLine(int argc, char ** argv)
 		std::cout << "usage: mosher [ options ]" << std::endl;
 		std::cout << desc;
 		std::cout << std::endl << "Examples:" << std::endl;
-		//cout << "  himan -f etc/tpot.json" << endl;
-		//cout << "  himan -f etc/vvmms.json -a file.grib -t querydata" << endl << endl;
+		std::cout << "  mosse -s 3 -e 6 -l 3 -m MOS_ECMWF_r144 --trace" << std::endl;
 		exit(1);
 	}
 
 	if (opt.count("sine"))
 	{
 		opts.sineWaveTransition = true;
+	}
+	
+	if (opt.count("trace"))
+	{
+		opts.trace = true;
 	}
 
 	if (opts.startStep == -1 || opts.endStep == -1)
@@ -161,13 +168,14 @@ int main(int argc, char ** argv)
 	
 	auto row = NFmiNeonsDB::Instance().FetchRow();
 	
-	if (row.empty())
+	if (row.empty() || row[0].empty())
 	{
 		throw std::runtime_error("Data not found from neons for ref_prod " + ref_prod);
 	}
 
 	mosInfo.originTime = row[0];
 	mosInfo.sineWaveTransition = opts.sineWaveTransition;
+	mosInfo.traceOutput = opts.trace;
 
 #ifdef DEBUG
 	std::cout << "Analysis time: " << mosInfo.originTime << std::endl;
