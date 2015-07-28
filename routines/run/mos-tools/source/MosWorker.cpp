@@ -79,10 +79,11 @@ double XPosition(const MosInfo& mosInfo, const Weight& weight)
 	
 	assert (xposition >= 0 && xposition <= 1);
 
-#ifdef DEBUG
-	std::cout << "Period start: " << ToString(periodStart, "%Y%m%d") << " Period stop: " << ToString(periodStop, "%Y%m%d") << " Current date: " << ToString(periodPosition, "%Y%m%d") << std::endl;
-	std::cout << "Relative position of current forecast within period [0..1]: " << xposition << std::endl;
-#endif
+	if (mosInfo.traceOutput)
+	{
+		std::cout << "Period start: " << ToString(periodStart, "%Y%m%d") << " Period stop: " << ToString(periodStop, "%Y%m%d") << " Current date: " << ToString(periodPosition, "%Y%m%d") << std::endl;
+		std::cout << "Relative position of current forecast within period [0..1]: " << xposition << std::endl;
+	}
 
 	return xposition;
 }
@@ -99,9 +100,10 @@ Weights AdjustWeights(const MosInfo& mosInfo, const Weights& weights, const Weig
 	
 	double yposition = sin(3.1415 * xposition) * 0.5;
 
-#ifdef DEBUG
-	std::cout << "Current period has a weight of [0..1]: " << yposition << std::endl;
-#endif
+	if (mosInfo.traceOutput)
+	{
+		std::cout << "Current period has a weight of [0..1]: " << yposition << std::endl;
+	}
 	
 	BOOST_FOREACH(const auto& it, weights)
 	{
@@ -125,9 +127,11 @@ Weights AdjustWeights(const MosInfo& mosInfo, const Weights& weights, const Weig
 			if (w != ow)
 			{
 				nw = yposition * w + (1 - yposition) * nw ;
-#ifdef DEBUG			
-				std::cout << "Current period weight: " << w << "\tOther period weight: " << ow << "\tNew weight: " << nw << std::endl;
-#endif
+				
+				if (mosInfo.traceOutput)
+				{
+					std::cout << "Current period weight: " << w << "\tOther period weight: " << ow << "\tNew weight: " << nw << std::endl;
+				}
 			}
 		}
 	}
@@ -210,7 +214,10 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 				<< std::endl;
 #endif
 		
-		itsMosDB->WriteTrace(mosInfo, result, station, nowstr);
+		if (mosInfo.traceOutput)
+		{
+			itsMosDB->WriteTrace(mosInfo, result, station, nowstr);
+		}
 
 	}
 	
@@ -234,17 +241,19 @@ MosWorker::~MosWorker()
 	}
 }
 
-double MosWorker::Mosh(const MosInfo& mosInfo, int step)
+bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 {
 
 	// 1. Get weights
-
+	
+	std::cout << "Fetching weights" << std::endl;
+		
 	auto weights = itsMosDB->GetWeights(mosInfo, step);
 
 	if (weights.empty())
 	{
 		std::cerr << "No weights for step " << step << std::endl;
-		return kFloatMissing;
+		return false;
 	}
 	
 	Weights otherWeights;
@@ -267,13 +276,16 @@ double MosWorker::Mosh(const MosInfo& mosInfo, int step)
 	
 	// 2. Get raw forecasts
 
+	std::cout << "Fetching source data" << std::endl;
+
 	BOOST_FOREACH(auto& it, weights)
 	{
 		Station station = it.first;
 
-#ifdef DEBUG
-		std::cout << station.name << " " << it.second.params.size() << " weights" << std::endl;
-#endif
+		if (mosInfo.traceOutput)
+		{
+			std::cout << station.id << " " << station.name << " " << it.second.params.size() << " weights" << std::endl;
+		}
 		
 		it.second.values.resize(it.second.weights.size(), 0);
 
@@ -311,6 +323,8 @@ double MosWorker::Mosh(const MosInfo& mosInfo, int step)
 
 	// 3. Apply
 	
+	std::cout << "Applying weights" << std::endl;
+
 	Results results;
 
 	BOOST_FOREACH(const auto& it, weights)
@@ -319,7 +333,7 @@ double MosWorker::Mosh(const MosInfo& mosInfo, int step)
 	
 		Result r;
 	
-#ifdef DEBUG
+#ifdef EXTRADEBUG
 		std::cout << it.second.values << 
 				"\n" << it.second.weights  <<
 				"\n" << boost::numeric::ublas::inner_prod(it.second.values, it.second.weights) << std::endl;
@@ -334,9 +348,11 @@ double MosWorker::Mosh(const MosInfo& mosInfo, int step)
 
 	// 4. Write to file
 	
+	std::cout << "Writing results" << std::endl;
+
 	Write(mosInfo, results);
 
-	return 1.;
+	return true;
 }
 
 bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName)

@@ -11,4 +11,5 @@ struct MosInfo
 	int producerId;
 	
 	bool sineWaveTransition;
+	bool traceOutput;
 };
