@@ -16,9 +16,9 @@
 #include <boost/numeric/ublas/io.hpp> 
 #endif
 
-std::string Key(const ParamLevel& pl) 
+std::string Key(const ParamLevel& pl, int step) 
 { 
-	return pl.paramName + "/" + pl.levelName + "/" + boost::lexical_cast<std::string> (pl.levelValue); 
+	return pl.paramName + "/" + pl.levelName + "/" + boost::lexical_cast<std::string> (pl.levelValue) + "@" + boost::lexical_cast<std::string> (step); 
 }
 
 std::string ToString(boost::posix_time::ptime p, const std::string& timeMask)
@@ -276,17 +276,19 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 	
 	// 2. Get raw forecasts
 
-	std::cout << "Fetching source data" << std::endl;
+	std::cout << "Fetching source data for step " << step << std::endl;
 
 	BOOST_FOREACH(auto& it, weights)
 	{
 		Station station = it.first;
 
+#ifdef DEBUG
 		if (mosInfo.traceOutput)
 		{
 			std::cout << station.id << " " << station.name << " " << it.second.params.size() << " weights" << std::endl;
 		}
-		
+#endif	
+
 		it.second.values.resize(it.second.weights.size(), 0);
 
 		for (size_t i = 0; i < it.second.params.size(); i++)
@@ -355,7 +357,7 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 	return true;
 }
 
-bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName)
+bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName, int step)
 {
 
 	NFmiGrib reader;
@@ -447,10 +449,10 @@ bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const 
 	
 	NFmiFastQueryInfo qi(pdesc, tdesc, hdesc, vdesc);
 	
-	auto data = NFmiQueryDataUtil::CreateEmptyData(qi);
+	auto data = std::shared_ptr<NFmiQueryData> (NFmiQueryDataUtil::CreateEmptyData(qi));
 	data->Info()->SetProducer(NFmiProducer(1, "TEMPPROD"));
 	
-	NFmiFastQueryInfo info (data);
+	NFmiFastQueryInfo info (data.get());
 	info.First();
 	
 	int num = 0;
@@ -465,14 +467,14 @@ bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const 
 	NFmiStreamQueryData streamData(data, false);
 	assert(streamData.WriteData("TEST.fqd"));
 #endif
-	itsDatas[Key(pl)] = std::make_pair(data,info);
+	itsDatas[Key(pl,step)] = std::make_pair(data,info);
 	return true;
 
 }
 
 double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
 {
-	auto key = Key(pl);
+	auto key = Key(pl, step);
 
 	NFmiPoint latlon(station.longitude, station.latitude);
 	
@@ -538,7 +540,7 @@ double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const 
 		return kFloatMissing;
 	}
 
-	if (!ToQueryInfo(mosInfo, pl, row[4]))
+	if (!ToQueryInfo(mosInfo, pl, row[4], step))
 	{
 		std::cerr << "Reading file '" << row[4] << "' failed" << std::endl;
 		return kFloatMissing;
