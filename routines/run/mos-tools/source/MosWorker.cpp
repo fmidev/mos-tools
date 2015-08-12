@@ -172,8 +172,9 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 		const auto station = it.first;
 		const auto result = it.second;
 
-#ifdef LEGACY_MODE
 		boost::posix_time::ptime originTime = ToPtime(mosInfo.originTime, "%Y%m%d%H%M");
+
+#ifdef LEGACY_MODE
 
 		boost::posix_time::hours adjustment (result.step);
 		boost::posix_time::ptime leadTime = originTime + adjustment;
@@ -198,7 +199,7 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 #else
 		outfile << mosInfo.producerId 
 				<< "," 
-				<< ToString(now, "%Y-%m-%d %H:%M:%S") 
+				<< ToString(originTime, "%Y-%m-%d %H:%M:%S") 
 				<< "," 
 				<< station.wmoId 
 				<< "," 

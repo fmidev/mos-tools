@@ -7,7 +7,7 @@
 #include <NFmiFastQueryInfo.h>
 #include "Result.h"
 
-typedef std::pair<NFmiQueryData*,NFmiFastQueryInfo> datas;
+typedef std::pair<std::shared_ptr<NFmiQueryData>, NFmiFastQueryInfo> datas;
 
 class MosWorker
 {
@@ -17,7 +17,7 @@ public:
 	std::unique_ptr<MosDB> itsMosDB;
 	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
 private:
-	bool ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName);
+	bool ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName, int step);
 	double GetData(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step);
 	void Write(const MosInfo& mosInfo, const Results& result);
 
