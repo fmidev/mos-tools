@@ -215,13 +215,14 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 				<< std::endl;
 #endif
 		
-		if (mosInfo.traceOutput)
-		{
-			itsMosDB->WriteTrace(mosInfo, result, station, nowstr);
-		}
-
 	}
 	
+	if (mosInfo.traceOutput)
+	{
+		std::cout << "Writing trace" << std::endl;
+		itsMosDB->WriteTrace(mosInfo, results, nowstr);
+	}
+		
 #ifndef LEGACY_MODE
 	outfile.close();
 	std::cout << "Wrote file '" << fileName << "'" << std::endl;

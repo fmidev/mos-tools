@@ -8,6 +8,7 @@
 
 #ifdef DEBUG
 #include <boost/numeric/ublas/io.hpp> 
+extern std::string Key(const ParamLevel& pl, int step) ;
 #endif
 
 std::string ToHstore(const std::vector<ParamLevel>& keys, const boost::numeric::ublas::vector<double>& values)
@@ -195,20 +196,20 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 		Station s;
 
 		w.weights.resize(weightkeysstr.size(), 0);
-
-		int i = 0;
+		w.params.resize(weightkeysstr.size());
 		
-		std::for_each(weightvalsstr.begin(), weightvalsstr.end(), [&](const std::string& val){ 
-
-			double dval = boost::lexical_cast<double> (val);
+		assert(weightkeysstr.size() == weightvalsstr.size());
+		
+		for (size_t i = 0; i < weightvalsstr.size(); i++)
+		{
+			double val = boost::lexical_cast<double> (weightvalsstr[i]);
+			assert(val == val); // no NaN
 			
-			assert(dval == dval); // no NaN
-					
-			w.weights[i++] = dval;
-		});
-
-		std::for_each(weightkeysstr.begin(), weightkeysstr.end(), [&](std::string& val){
-			ParamLevel pl(val);
+			w.weights[i] = val;
+			
+			std::string key = weightkeysstr[i];
+			
+			ParamLevel pl(key);
 			
 			if (pl.paramName == "TD-K")
 			{
@@ -219,8 +220,9 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 				pl.levelName = "GROUND";
 			}
 			
-			w.params.push_back(pl);
-		});
+			w.params[i] = pl;
+			
+		}
 
 		w.step = step;
 		w.startDate = startDate;
@@ -237,7 +239,7 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 
 		if (!w.params.empty()) weights[s] = w;
 	}
-
+	
 //	std::cout << w.params.size() << " vs " << w.weights.size() << std::endl;
 	
 	if (mosInfo.traceOutput)
@@ -277,11 +279,18 @@ MosInfo MosDB::GetMosInfo(const std::string& mosLabel)
 	return mosInfo;
 }
 
-void MosDB::WriteTrace(const MosInfo& mosInfo, const Result& result, const Station& station, const std::string& run_time)
+void MosDB::WriteTrace(const MosInfo& mosInfo, const Results& results, const std::string& run_time)
 {
 	std::stringstream query;
 	
-	query << "INSERT INTO mos_trace "
+	BOOST_FOREACH(const auto& it, results)
+	{
+		const auto station = it.first;
+		const auto result = it.second;
+
+		query.str("");
+
+		query << "INSERT INTO mos_trace "
 			<< "(mos_version_id, mos_period_id, mos_other_period_id, analysis_time, station_id, forecast_period, target_param_id, target_level_id, target_level_value, weights, source_values, value, run_time) "
 			<< "SELECT "
 			<< mosInfo.id << ","
@@ -300,7 +309,9 @@ void MosDB::WriteTrace(const MosInfo& mosInfo, const Result& result, const Stati
 			<< " FROM param p, level l WHERE p.name = '" << mosInfo.paramName << "' AND l.name = 'GROUND'"
 			;
 	
-	Execute(query.str());
+		Execute(query.str());
+	}
+	
 	Commit();
 }
 

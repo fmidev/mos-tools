@@ -57,8 +57,6 @@ void ParseCommandLine(int argc, char ** argv)
 	("parameter,p", po::value(&opts.paramName), "parameter name (neons-style)")
 	("sine", "apply weight transition between periods using sine wave factor (default false)")
 	("trace", "write trace information to log and database (default false)")
-	//("radon,R", "use only radon database")
-	//("neons,N", "use only neons database")
 	;
 
 	po::positional_options_description p;
