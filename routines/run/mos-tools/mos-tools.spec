@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        15.8.13
+Version:        15.8.24
 Release:        1%{?dist}.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -45,6 +45,8 @@ rm -rf %{buildroot}
 %{_bindir}/mosse
 
 %changelog
+* Mon Aug 24 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.24-1.fmi
+- fmigrib api change
 * Thu Aug 13 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.13-1.fmi
 - Minor tweaks to trace output
 * Mon Aug 10 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.10-1.fmi
