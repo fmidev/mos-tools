@@ -104,7 +104,7 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 			<< "LAG(d.id,1) OVER () AS lag_id, LAG(d.start_date,1) OVER () AS lag_start_date, LAG(d.stop_date,1) OVER () AS lag_stop_date,"
 			<< "LEAD(d.id,1) OVER () AS lead_id,LEAD(d.start_date,1) OVER () AS lead_start_date, LEAD(d.stop_date,1) OVER () AS lead_stop_date "
 			<< "FROM dates d) ss WHERE "
-			<< "start_date <= to_date('" << atime << "', 'yyyymmdd') AND stop_date > to_date('" << atime <<  "', 'yyyymmdd') "
+			<< "start_date <= to_date('" << atime << "', 'yyyymmdd') AND stop_date >= to_date('" << atime <<  "', 'yyyymmdd') "
 			;
 	
 	Query(query.str());
