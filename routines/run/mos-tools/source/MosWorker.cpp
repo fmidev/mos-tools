@@ -16,6 +16,39 @@
 #include <boost/numeric/ublas/io.hpp> 
 #endif
 
+boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
+
+const double PI = 3.14159265359;
+
+double SunElevationAngle(int step, double latitude, const std::string& originTime)
+{
+	auto orig = ToPtime(originTime, "%Y%m%d%H%M");
+	orig += boost::posix_time::seconds(60 * step);
+	
+	tm orig_tm = to_tm(orig);
+
+	// Formula from Jussi Ylhaisi
+	
+	// 1) Ensin lasketaan auringon tuntikulma radiaaneina
+
+	// (eli siis tuntikulma on nolla paikallista aikaa klo 12, josta se lähtee kasvamaan lineaarisesti 
+	// kohti arvoa 2*pi kunnes taas nollautuu seuraavana päivänä klo12 paikallista aikaa.
+			
+	double hour_angle = fmod((orig_tm.tm_hour+12), 24.) / 24. * 2. * PI;
+	
+	// 2) Lasketaan auringon deklinaatio (maan akselin ja maan kiertorataa kohtisuoran viivan välinen kulma)
+			
+	double declination = cos((orig_tm.tm_yday + 10) / 365. * (2 * PI)) * -23.44;
+	
+	// 3) Lasketaan näiden avulla auringon korkeuskulma kullakin hetkellä (termit eri järjestyksessä kuin 
+	//    sivulla https://en.wikipedia.org/wiki/Solar_zenith_angle, muuten kaava on sama)
+	
+	double solar_angle = asin(cos(hour_angle) * cos(declination / 360. * 2 * PI ) * cos(2 * PI / 360. * latitude) + sin(declination / 360. * 2 * PI) * sin(2 * PI / 360. * latitude)) * 360. / 2 / PI;
+	
+	return solar_angle;
+	
+}
+
 std::string Key(const ParamLevel& pl, int step) 
 { 
 	return pl.paramName + "/" + pl.levelName + "/" + boost::lexical_cast<std::string> (pl.levelValue) + "@" + boost::lexical_cast<std::string> (step); 
@@ -494,8 +527,8 @@ double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const 
 
 	// Following parameters are cumulative and therefore cannot be directly used at MOS;
 	// We have to fetch rates and powers from himan-producer
-	
-	if (pl.paramName == "RNETLW-WM2")
+
+	if (paramName == "RNETLW-WM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
@@ -507,6 +540,25 @@ double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const 
 		paramName = "RRR-KGM2";
 	}
 
+	// T, T925 and T950 can have previous timestep values
+
+	if (pl.stepAdjustment < 0)
+	{
+		if (step <= 3)
+		{
+			throw std::runtime_error("Previous timestep data requested for time step 0 or 3");
+		}
+
+		if (step < 144)
+		{
+			step += 3 * pl.stepAdjustment;
+		}
+		else
+		{
+			step += 6 * pl.stepAdjustment;
+		}
+	}
+	
 	auto prodInfo = itsNeonsDB->GetProducerDefinition(producerId);
 	
 	assert(prodInfo.size());
@@ -529,7 +581,7 @@ double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const 
 			   "WHERE parm_name = upper('" << paramName << "') "
 			   "AND lvl_type = upper('" << levelName << "') "
 			   "AND lvl1_lvl2 = " << pl.levelValue << " "
-			   "AND fcst_per = " << step <<" "
+			   "AND fcst_per = " << step << " "
 			   "ORDER BY dset_id, fcst_per, lvl_type, lvl1_lvl2";
 
 	itsNeonsDB->Query(query.str());

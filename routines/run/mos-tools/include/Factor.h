@@ -9,11 +9,13 @@ struct ParamLevel
 	std::string paramName;
 	std::string levelName;
 	double levelValue;
+	int stepAdjustment;
 	
 	ParamLevel() 
 		: paramName("TEST")
 		, levelName("TEST")
 		, levelValue(32700.)
+		, stepAdjustment(0)
 	{};
 	
 	ParamLevel(const std::string& str)
@@ -24,6 +26,16 @@ struct ParamLevel
 		paramName = split[0];
 		levelName = split[1];
 		levelValue = boost::lexical_cast<double> (split[2]);
+		
+		if (split.size() > 3)
+		{
+			stepAdjustment = boost::lexical_cast<int> (split[3]);
+			
+			if (stepAdjustment > 0)
+			{
+				throw std::runtime_error("No support for next time step data");
+			}
+		}
 	}
 };
 
@@ -33,12 +45,7 @@ struct Weight
 	boost::numeric::ublas::vector<double> weights;
 	boost::numeric::ublas::vector<double> values;
 	
-	int periodId;
-	//int startMonth;
-	//int startDay;
-	//int stopMonth;
-	//int stopDay;
-	
+	int periodId;	
 	int step;
 
 	std::string startDate;
@@ -60,6 +67,5 @@ struct Station
 	bool operator<(const Station& other) const { return wmoId < other.wmoId; }
 
 };
-
 
 typedef std::map<Station, Weight> Weights;
