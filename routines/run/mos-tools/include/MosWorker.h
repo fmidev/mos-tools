@@ -18,7 +18,8 @@ public:
 	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
 private:
 	bool ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName, int step);
-	double GetData(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step);
+	double GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step);
+	bool GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step);	
 	void Write(const MosInfo& mosInfo, const Results& result);
 
 	std::map<std::string, datas> itsDatas;

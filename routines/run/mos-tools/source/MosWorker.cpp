@@ -50,8 +50,16 @@ double SunElevationAngle(int step, double latitude, const std::string& originTim
 }
 
 std::string Key(const ParamLevel& pl, int step) 
-{ 
-	return pl.paramName + "/" + pl.levelName + "/" + boost::lexical_cast<std::string> (pl.levelValue) + "@" + boost::lexical_cast<std::string> (step); 
+{
+	step = (step < 150) ? step - pl.stepAdjustment * 3 : step - pl.stepAdjustment * 6;
+	
+	return pl.paramName
+			+ "/"
+			+ pl.levelName
+			+ "/"
+			+ boost::lexical_cast<std::string> (pl.levelValue);
+			+ "@" 
+			+ boost::lexical_cast<std::string> (step); 
 }
 
 std::string ToString(boost::posix_time::ptime p, const std::string& timeMask)
@@ -343,7 +351,7 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 			
 				if (pl.paramName != "INTERCEPT-N")
 				{
-					value = GetData(mosInfo, station, pl, step);
+					value = GetValue(mosInfo, station, pl, step);
 				}
 			}
 
@@ -403,7 +411,7 @@ bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const 
 		return false;
 	}
 
-	std::cout << "Reading file '" << fileName << "'" << std::endl;
+	std::cout << "Reading file '" << fileName << "' for parameter " << pl << std::endl;
 	
 	reader.NextMessage();
 	
@@ -507,39 +515,124 @@ bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const 
 
 }
 
-double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
+double MosWorker::GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
 {
 	auto key = Key(pl, step);
+	assert(step >= 3);
 
 	NFmiPoint latlon(station.longitude, station.latitude);
 	
-	if (itsDatas.find(key) != itsDatas.end())
-	{
-		double value = itsDatas[key].second.InterpolatedValue(latlon);
-		assert(value == value);
+	bool isCumulativeParameter =
+		(pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M");
+	
+	bool isCumulativeRadiationParameter = 
+		(pl.paramName == "FLSEN-JM2" || pl.paramName == "FLLAT-JM2"  || pl.paramName == "RNETSW-WM2"  || pl.paramName == "RADDIRSOLAR-JM2");
 
-		return value;
+	int prevStep = -1;
+	
+	if (itsDatas.find(key) == itsDatas.end())
+	{
+		if (!GetData(mosInfo, pl, step))
+		{
+			return kFloatMissing;
+		}
+		
+		if (isCumulativeParameter || isCumulativeRadiationParameter)
+		{
+			prevStep = step - 3;
+
+			if (step > 144) prevStep = step - 6;
+
+			if (prevStep != 0 && !GetData(mosInfo, pl, prevStep))
+			{
+				return kFloatMissing;
+			}
+		}
 	}
 	
+	double value = itsDatas[key].second.InterpolatedValue(latlon);
+	assert(value == value);
+
+	if (isCumulativeParameter || isCumulativeRadiationParameter)
+	{
+		double prevValue = (prevStep == 0) ? 0 : itsDatas[Key(pl, prevStep)].second.InterpolatedValue(latlon);
+	
+		if (value != kFloatMissing && prevValue != kFloatMissing)
+		{
+			value -= prevValue;
+			
+			if (isCumulativeRadiationParameter)
+			{
+				value /= ((step-prevStep)*3600);
+			}
+		}
+	}
+	
+	return value;
+}
+
+bool MosWorker::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step)
+{
 	int producerId = mosInfo.producerId;
 	std::string levelName = pl.levelName;
 	std::string paramName = pl.paramName;
 
-	// Following parameters are cumulative and therefore cannot be directly used at MOS;
-	// We have to fetch rates and powers from himan-producer
+	// Perform parameter transformation, to make sure we get the same data
+	// mos was used to train
+	
+	// Radiation is used as power (W/m2)
 
 	if (paramName == "RNETLW-WM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
 	}
+	else if (paramName == "RADGLO-WM2")
+	{
+		producerId = 240;
+		levelName = "HEIGHT";
+	}	
+	else if (paramName == "RADLW-WM2")
+	{
+		producerId = 240;
+		levelName = "HEIGHT";
+	}
+	
+	// Precipitation is also *not* cumulative from the forecast start
+	
 	else if (paramName == "RR-KGM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
 		paramName = "RRR-KGM2";
 	}
-
+	else if (paramName == "RRC-KGM2")
+	{
+		producerId = 240;
+		levelName = "HEIGHT";
+		paramName = "RRRC-KGM2";
+	}
+	else if (paramName == "RRL-KGM2")
+	{
+		producerId = 240;
+		levelName = "HEIGHT";
+		paramName = "RRRL-KGM2";
+	}
+	
+	// Erroneus metadata in neons
+	
+	else if (paramName == "TD-K")
+	{
+		paramName = "TD-C";
+	}
+	
+	// Meansea pressure is at level GROUND in neons (surface (station) pressure is PGR-PA)
+	
+	else if (paramName == "P-PA" && levelName == "MEANSEA")
+	{
+		levelName = "GROUND";
+	}
+			
 	// T, T925 and T950 can have previous timestep values
 
 	if (pl.stepAdjustment < 0)
@@ -571,7 +664,16 @@ double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const 
 	
 	BOOST_FOREACH(const auto& geom, gridgeoms)
 	{
-		if (geom[0] == "ECGLO0125") tableName = geom[1];
+		if (pl.paramName == "FFG-MS")
+		{
+			// Gust needs to be taken from this geometry
+			// since the global one does not have FG10_3 but FG10_1
+			if (geom[0] == "ECEUR0125") tableName = geom[1];
+		}
+		else
+		{
+			if (geom[0] == "ECGLO0125") tableName = geom[1];
+		}
 	}
 
 	std::stringstream query;
@@ -591,18 +693,14 @@ double MosWorker::GetData(const MosInfo& mosInfo, const Station& station, const 
 	if (row.empty())
 	{
 		std::cerr << "No data found for " << producerId << "/" << paramName << "/" << levelName << "/" << pl.levelValue << " step " << step << std::endl;
-		return kFloatMissing;
+		return false;
 	}
 
 	if (!ToQueryInfo(mosInfo, pl, row[4], step))
 	{
 		std::cerr << "Reading file '" << row[4] << "' failed" << std::endl;
-		return kFloatMissing;
+		return false;
 	}
-	
-	double value = itsDatas[key].second.InterpolatedValue(latlon);
-	
-	assert(value == value);
-	
-	return value;
+
+	return true;
 }

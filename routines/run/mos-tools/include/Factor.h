@@ -26,8 +26,9 @@ struct ParamLevel
 		paramName = split[0];
 		levelName = split[1];
 		levelValue = boost::lexical_cast<double> (split[2]);
+		stepAdjustment = 0;
 		
-		if (split.size() > 3)
+		if (split.size() > 3 && split[3].size() > 0)
 		{
 			stepAdjustment = boost::lexical_cast<int> (split[3]);
 			
@@ -37,7 +38,18 @@ struct ParamLevel
 			}
 		}
 	}
+	
 };
+
+inline
+std::ostream& operator<<(std::ostream& file, const ParamLevel& ob)
+{
+	file << ob.paramName << "/" << ob.levelName << "/" << ob.levelValue;
+
+	if (ob.stepAdjustment != 0) file << "/" << ob.stepAdjustment;
+
+	return file;
+}
 
 struct Weight
 {
