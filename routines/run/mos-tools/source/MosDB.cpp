@@ -210,16 +210,7 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 			std::string key = weightkeysstr[i];
 			
 			ParamLevel pl(key);
-			
-			if (pl.paramName == "TD-K")
-			{
-				pl.paramName = "TD-C";
-			}
-			else if (pl.paramName == "P-PA" && pl.levelName == "MEANSEA")
-			{
-				pl.levelName = "GROUND";
-			}
-			
+
 			w.params[i] = pl;
 			
 		}
