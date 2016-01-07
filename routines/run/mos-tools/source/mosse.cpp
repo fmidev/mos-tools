@@ -93,12 +93,14 @@ void ParseCommandLine(int argc, char ** argv)
 	if (opts.startStep == -1 || opts.endStep == -1)
 	{
 		std::cerr << "Start and end steps must be specified" << std::endl;
+		std::cout << desc;
 		exit(1);
 	}
 
 	if (opts.mosLabel.empty())
 	{
 		std::cerr << "Mos label must be specified" << std::endl;
+		std::cout << desc;
 		exit(1);	
 	}
 
