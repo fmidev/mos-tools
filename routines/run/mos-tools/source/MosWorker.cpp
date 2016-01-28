@@ -537,7 +537,7 @@ double MosWorker::GetValue(const MosInfo& mosInfo, const Station& station, const
 	auto key = Key(pl, step);
 	assert(step >= 3);
 
-	if (ol.paramName == "SIN_SOL_ANGLE")
+	if (pl.paramName == "SIN_SOL_ANGLE")
 	{
 		return SunElevationAngle(step, station, mosInfo.originTime);
 	}
