@@ -20,32 +20,49 @@ boost::posix_time::ptime ToPtime(const std::string& time, const std::string& tim
 
 const double PI = 3.14159265359;
 
-double SunElevationAngle(int step, double latitude, const std::string& originTime)
+double SunElevationAngle(int step, const Station& station, const std::string& originTime)
 {
 	auto orig = ToPtime(originTime, "%Y%m%d%H%M");
-	orig += boost::posix_time::seconds(60 * step);
+	orig += boost::posix_time::seconds(3600 * step);
 	
 	tm orig_tm = to_tm(orig);
 
 	// Formula from Jussi Ylhaisi
 	
-	// 1) Ensin lasketaan auringon tuntikulma radiaaneina
+	const int hour_of_day = orig_tm.tm_hour;
+	const double daydoy = orig_tm.tm_yday + hour_of_day / 24.;
+	
+	// 1) Lasketaan auringon deklinaatio (maan akselin ja maan kiertorataa kohtisuoran viivan välinen kulma)
+	
+	// Tässä daydoy on vuoden päivämäärä 0...365/366 vuoden alusta lukien. Tunnit luetaan tähän mukaan, 
+	// eli esim. ajanhetkelle 2.1. klo 15 daydoy=1.625. Huom. päivä ei siis ala indeksistä 1, vaan 0! 
+	// Ylläolevat laskut antavat ulos asteina deklinaation.
 
-	// (eli siis tuntikulma on nolla paikallista aikaa klo 12, josta se lähtee kasvamaan lineaarisesti 
-	// kohti arvoa 2*pi kunnes taas nollautuu seuraavana päivänä klo12 paikallista aikaa.
-			
-	double hour_angle = fmod((orig_tm.tm_hour+12), 24.) / 24. * 2. * PI;
+	const double declination = -asin(0.39779 * cos(0.98565 * ((daydoy + 10) + 1.914 * sin(0.98565 * (daydoy - 2)))));
+
+	// 2) Lasketaan auringon tuntikulma
+
+	// Eli siis tuntikulma on nolla paikallista aikaa klo 12, josta se lähtee kasvamaan lineaarisesti 
+	// kohti arvoa 360astetta kunnes taas nollautuu seuraavana päivänä klo12 paikallista aikaa. 
+	// Esim. UTC-kellonajalle 15 longitudilla 40 tuntikulma on 85astetta (45+40), tai UTC-kellonajalle 9 
+	// longitudilla -20 295astetta (315-20)
+
+	const double hour_angle_UTC = fmod((hour_of_day+12), 24.) / 24. * 360;
+	const double hour_angle_local = fmod((hour_angle_UTC + station.longitude), 360);
 	
-	// 2) Lasketaan auringon deklinaatio (maan akselin ja maan kiertorataa kohtisuoran viivan välinen kulma)
-			
-	double declination = cos((orig_tm.tm_yday + 10) / 365. * (2 * PI)) * -23.44;
+	// 3) Lasketaan näiden avulla auringon korkeuskulma kullakin hetkellä (termit eri järjestyksessä 
+	// kuin sivulla https://en.wikipedia.org/wiki/Solar_zenith_angle, muuten kaava on sama)
+
+	//const double solar_angle = asin((cos(hour_angle_local) * cos(declination) * cos(station.latitude)) + (sin(declination) * sin(station.latitude));
 	
-	// 3) Lasketaan näiden avulla auringon korkeuskulma kullakin hetkellä (termit eri järjestyksessä kuin 
-	//    sivulla https://en.wikipedia.org/wiki/Solar_zenith_angle, muuten kaava on sama)
+	//4) Auringon korkeuskulmasta täytyy lineaarisuutta varten sini (säteilyteho on korkeuskulman siniin 
+	// verrannollinen), jolloin kaava on lopulta
+
+	const double sin_solar_angle = (cos(hour_angle_local) * cos(declination) * cos (station.latitude)) + (sin(declination) * sin(station.latitude)); 
+		
+	// MOS:ia varten toimitettavat auringon korkeuskulman kertoimet on merkitty tunnisteella  SIN_SOL_ANGLE
 	
-	double solar_angle = asin(cos(hour_angle) * cos(declination / 360. * 2 * PI ) * cos(2 * PI / 360. * latitude) + sin(declination / 360. * 2 * PI) * sin(2 * PI / 360. * latitude)) * 360. / 2 / PI;
-	
-	return solar_angle;
+	return sin_solar_angle;
 	
 }
 
@@ -520,6 +537,11 @@ double MosWorker::GetValue(const MosInfo& mosInfo, const Station& station, const
 	auto key = Key(pl, step);
 	assert(step >= 3);
 
+	if (ol.paramName == "SIN_SOL_ANGLE")
+	{
+		return SunElevationAngle(step, station, mosInfo.originTime);
+	}
+	
 	NFmiPoint latlon(station.longitude, station.latitude);
 	
 	bool isCumulativeParameter =
