@@ -61,7 +61,7 @@ std::string Key(const ParamLevel& pl, int step)
 			+ "/"
 			+ pl.levelName
 			+ "/"
-			+ boost::lexical_cast<std::string> (pl.levelValue);
+			+ boost::lexical_cast<std::string> (pl.levelValue)
 			+ "@" 
 			+ boost::lexical_cast<std::string> (step); 
 }
@@ -522,6 +522,7 @@ bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const 
 double MosWorker::GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
 {
 	auto key = Key(pl, step);
+
 	assert(step >= 3);
 
 	if (pl.paramName == "DECLINATION")
