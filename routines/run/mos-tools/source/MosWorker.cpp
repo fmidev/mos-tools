@@ -1,12 +1,7 @@
 #include "MosWorker.h"
-#include "NFmiGrib.h"
 #include <sstream>
 #include <fstream>
-#include <NFmiTimeList.h>
-#include <NFmiMetTime.h>
-#include <NFmiLatLonArea.h>
-#include <NFmiQueryData.h>
-#include <NFmiQueryDataUtil.h>
+
 #include <boost/foreach.hpp>
 #include "Result.h"
 #include <boost/numeric/ublas/vector.hpp>
@@ -17,54 +12,6 @@
 #endif
 
 boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
-
-const double PI = 3.14159265359;
-
-double Declination(int step, const Station& station, const std::string& originTime)
-{
-	auto orig = ToPtime(originTime, "%Y%m%d%H%M");
-	orig += boost::posix_time::seconds(3600 * step);
-	
-	tm orig_tm = to_tm(orig);
-
-	// Formula from Jussi Ylhaisi
-	
-	const int hour_of_day = orig_tm.tm_hour;
-
-	// Sekä deklinaation että länpötilan vuosisyklin jaksonaika on tasan yksi vuosi, mutta näillä 
-	// aalloilla on vaihe-ero: Lämpötilan vuosisykli on hieman perässä. Esim. aurinko on on korkeimmillaan 
-	// juhannuksena kesäkuun lopulla, mutta silti heinäkuu on ilmastollisesti lämpimin kuukausi.
-	// Keskimääräiseksi vaihe-eroksi talvi-kesäkausilla tulee kuitenkin n. 32 päivää, tällä saadaan aallot synkkaan. 
-	// Tämä on ihan ok oletus kaikkina vuorokaudenaikoina
-
-	double daydoy = orig_tm.tm_yday + hour_of_day / 24. - 32.;
-	
-	if (daydoy < 0) daydoy += 365.;
-
-	// 1) Lasketaan auringon deklinaatio (maan akselin ja maan kiertorataa kohtisuoran viivan välinen kulma)
-	
-	// Tässä daydoy on vuoden päivämäärä 0...365/366 vuoden alusta lukien. Tunnit luetaan tähän mukaan, 
-	// eli esim. ajanhetkelle 2.1. klo 15 daydoy=1.625. Huom. päivä ei siis ala indeksistä 1, vaan 0! 
-	// Ylläolevat laskut antavat ulos asteina deklinaation.
-
-	const double declination = -asin(0.39779 * cos(0.98565 * ((daydoy + 10) + 1.914 * sin(0.98565 * (daydoy - 2)))));
-
-	return declination;
-	
-}
-
-std::string Key(const ParamLevel& pl, int step) 
-{
-	step = (step < 150) ? step - pl.stepAdjustment * 3 : step - pl.stepAdjustment * 6;
-	
-	return pl.paramName
-			+ "/"
-			+ pl.levelName
-			+ "/"
-			+ boost::lexical_cast<std::string> (pl.levelValue)
-			+ "@" 
-			+ boost::lexical_cast<std::string> (step); 
-}
 
 std::string ToString(boost::posix_time::ptime p, const std::string& timeMask)
 {
@@ -274,14 +221,13 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 #endif
 }
 
+MosWorker::MosWorker()
+{
+	itsMosDB = std::unique_ptr<MosDB> (MosDBPool::Instance()->GetConnection());
+}
 
 MosWorker::~MosWorker()
 {
-	if (itsNeonsDB)
-	{
-		NFmiNeonsDBPool::Instance()->Release(itsNeonsDB.get());
-	}
-
 	if (itsMosDB)
 	{
 		MosDBPool::Instance()->Release(itsMosDB.get());
@@ -355,20 +301,20 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 			
 				if (pl.paramName != "INTERCEPT-N")
 				{
-					value = GetValue(mosInfo, station, pl, step);
+					value = itsMosInterpolator.GetValue(mosInfo, station, pl, step);
 				}
 			}
 
-			if (value == kFloatMissing) return kFloatMissing;
+			//if (value == kFloatMissing) return kFloatMissing;
 
 			it.second.values[i] = value;
 		}
 	}
 	
-	if (itsDatas.size() == 0)
-	{
-		return kFloatMissing;
-	}
+	//if (itsDatas.size() == 0)
+	//{
+	//	return kFloatMissing;
+	//}
 
 	// 3. Apply
 	
@@ -404,313 +350,3 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 	return true;
 }
 
-bool MosWorker::ToQueryInfo(const MosInfo& mosInfo, const ParamLevel& pl, const std::string& fileName, int step)
-{
-
-	NFmiGrib reader;
-
-	if (!reader.Open(fileName))
-	{
-		//throw std::runtime_error("Reading failed!");
-		return false;
-	}
-
-	std::cout << "Reading file '" << fileName << "' for parameter " << pl << std::endl;
-	
-	reader.NextMessage();
-	
-	long dataDate = reader.Message().DataDate();
-	long dataTime = reader.Message().DataTime();
-
-	NFmiTimeList tlist;
-	
-	tlist.Add(new NFmiMetTime(boost::lexical_cast<long> (dataDate), boost::lexical_cast<long> (dataTime)));
-
-	NFmiTimeDescriptor tdesc(tlist.FirstTime(), tlist);
-	
-	NFmiParamBag pbag;
-
-	pbag.Add(NFmiDataIdent(NFmiParam(1, "ASDF")));
-
-	NFmiParamDescriptor pdesc(pbag);
-	
-	NFmiLevelBag lbag(kFmiAnyLevelType,0,0,0);
-  
-	NFmiVPlaceDescriptor vdesc(lbag);
-
-	long gridType = reader.Message().GridType();
-	
-	if (gridType != 0)
-	{
-		throw std::runtime_error("Supporting only latlon areas");
-	}
-
-	long ni = reader.Message().SizeX();
-	long nj = reader.Message().SizeY();
-	
-	double fx = reader.Message().X0();
-	double fy = reader.Message().Y0();
-
-	double lx = reader.Message().X1();
-	double ly = reader.Message().Y1();
-
-	bool jpos = reader.Message().JScansPositively();
-	
-	NFmiPoint bl, tr;
-	
-	bl.X(fx);
-	tr.X(lx+360); // TODO FIX THIS
-	
-	bl.Y(fy);
-	tr.Y(ly);
-
-	double* ddata = reader.Message().Values();
-	
-	if (!jpos)
-	{
-		bl.Y(ly);
-		tr.Y(fy);
-		
-		size_t halfSize = static_cast<size_t> (floor(nj/2));
-
-		for (size_t y = 0; y < halfSize; y++)
-		{
-			for (size_t x = 0; x < static_cast<size_t> (ni); x++)
-			{
-				size_t ui = y * ni + x;
-				size_t li = (nj-1-y) * ni + x;
-				double upper = ddata[ui];
-				double lower = ddata[li];
-
-				ddata[ui] = lower;
-				ddata[li] = upper;
-			}
-		}
-	}
-
-	NFmiArea* area = new NFmiLatLonArea(bl, tr);
-
-	NFmiGrid grid (area, ni, nj , kBottomLeft, kLinearly);
-
-	NFmiHPlaceDescriptor hdesc(grid);
-	
-	NFmiFastQueryInfo qi(pdesc, tdesc, hdesc, vdesc);
-	
-	auto data = std::shared_ptr<NFmiQueryData> (NFmiQueryDataUtil::CreateEmptyData(qi));
-	data->Info()->SetProducer(NFmiProducer(1, "TEMPPROD"));
-	
-	NFmiFastQueryInfo info (data.get());
-	info.First();
-	
-	int num = 0;
-	for (info.ResetLocation(); info.NextLocation(); ++num)
-	{
-		info.FloatValue(static_cast<float> (ddata[num]));
-	}
-
-	delete area;
-	free(ddata);
-#if 0
-	NFmiStreamQueryData streamData(data, false);
-	assert(streamData.WriteData("TEST.fqd"));
-#endif
-	itsDatas[Key(pl,step)] = std::make_pair(data,info);
-	return true;
-
-}
-
-double MosWorker::GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
-{
-	auto key = Key(pl, step);
-
-	assert(step >= 3);
-
-	if (pl.paramName == "DECLINATION")
-	{
-		return Declination(step, station, mosInfo.originTime);
-	}
-	
-	NFmiPoint latlon(station.longitude, station.latitude);
-	
-	bool isCumulativeParameter =
-		(pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M");
-	
-	bool isCumulativeRadiationParameter = 
-		(pl.paramName == "FLSEN-JM2" || pl.paramName == "FLLAT-JM2"  || pl.paramName == "RNETSW-WM2"  || pl.paramName == "RADDIRSOLAR-JM2");
-
-	int prevStep = -1;
-	
-	if (itsDatas.find(key) == itsDatas.end())
-	{
-		if (!GetData(mosInfo, pl, step))
-		{
-			return kFloatMissing;
-		}
-		
-		if (isCumulativeParameter || isCumulativeRadiationParameter)
-		{
-			prevStep = step - 3;
-
-			if (step > 144) prevStep = step - 6;
-
-			if (prevStep != 0 && !GetData(mosInfo, pl, prevStep))
-			{
-				return kFloatMissing;
-			}
-		}
-	}
-	
-	double value = itsDatas[key].second.InterpolatedValue(latlon);
-	assert(value == value);
-
-	if (isCumulativeParameter || isCumulativeRadiationParameter)
-	{
-		double prevValue = (prevStep == 0) ? 0 : itsDatas[Key(pl, prevStep)].second.InterpolatedValue(latlon);
-	
-		if (value != kFloatMissing && prevValue != kFloatMissing)
-		{
-			value -= prevValue;
-			
-			if (isCumulativeRadiationParameter)
-			{
-				value /= ((step-prevStep)*3600);
-			}
-		}
-	}
-	
-	return value;
-}
-
-bool MosWorker::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step)
-{
-	int producerId = mosInfo.producerId;
-	std::string levelName = pl.levelName;
-	std::string paramName = pl.paramName;
-
-	// Perform parameter transformation, to make sure we get the same data
-	// mos was used to train
-	
-	// Radiation is used as power (W/m2)
-
-	if (paramName == "RNETLW-WM2")
-	{
-		producerId = 240;
-		levelName = "HEIGHT";
-	}
-	else if (paramName == "RADGLO-WM2")
-	{
-		producerId = 240;
-		levelName = "HEIGHT";
-	}	
-	else if (paramName == "RADLW-WM2")
-	{
-		producerId = 240;
-		levelName = "HEIGHT";
-	}
-	
-	// Precipitation is also *not* cumulative from the forecast start
-	
-	else if (paramName == "RR-KGM2")
-	{
-		producerId = 240;
-		levelName = "HEIGHT";
-		paramName = "RRR-KGM2";
-	}
-	else if (paramName == "RRC-KGM2")
-	{
-		producerId = 240;
-		levelName = "HEIGHT";
-		paramName = "RRRC-KGM2";
-	}
-	else if (paramName == "RRL-KGM2")
-	{
-		producerId = 240;
-		levelName = "HEIGHT";
-		paramName = "RRRL-KGM2";
-	}
-	
-	// Erroneus metadata in neons
-	
-	else if (paramName == "TD-K")
-	{
-		paramName = "TD-C";
-	}
-	
-	// Meansea pressure is at level GROUND in neons (surface (station) pressure is PGR-PA)
-	
-	else if (paramName == "P-PA" && levelName == "MEANSEA")
-	{
-		levelName = "GROUND";
-	}
-			
-	// T, T925 and T950 can have previous timestep values
-
-	if (pl.stepAdjustment < 0)
-	{
-		if (step <= 3)
-		{
-			throw std::runtime_error("Previous timestep data requested for time step 0 or 3");
-		}
-
-		if (step < 144)
-		{
-			step += 3 * pl.stepAdjustment;
-		}
-		else
-		{
-			step += 6 * pl.stepAdjustment;
-		}
-	}
-	
-	auto prodInfo = itsNeonsDB->GetProducerDefinition(producerId);
-	
-	assert(prodInfo.size());
-
-	auto gridgeoms = itsNeonsDB->GetGridGeoms(prodInfo["ref_prod"], mosInfo.originTime);
-	
-	assert(gridgeoms.size());
-
-	std::string tableName = "default";
-	
-	BOOST_FOREACH(const auto& geom, gridgeoms)
-	{
-		if (pl.paramName == "FFG-MS")
-		{
-			// Gust needs to be taken from this geometry
-			// since the global one does not have FG10_3 but FG10_1
-			if (geom[0] == "ECEUR0125") tableName = geom[1];
-		}
-		else
-		{
-			if (geom[0] == "ECGLO0125") tableName = geom[1];
-		}
-	}
-
-	std::stringstream query;
-
-	query << "SELECT parm_name, lvl_type, lvl1_lvl2, fcst_per, file_location "
-			   "FROM " << tableName << " "
-			   "WHERE parm_name = upper('" << paramName << "') "
-			   "AND lvl_type = upper('" << levelName << "') "
-			   "AND lvl1_lvl2 = " << pl.levelValue << " "
-			   "AND fcst_per = " << step << " "
-			   "ORDER BY dset_id, fcst_per, lvl_type, lvl1_lvl2";
-
-	itsNeonsDB->Query(query.str());
-
-	auto row = itsNeonsDB->FetchRow();
-
-	if (row.empty())
-	{
-		std::cerr << "No data found for " << producerId << "/" << paramName << "/" << levelName << "/" << pl.levelValue << " step " << step << std::endl;
-		return false;
-	}
-
-	if (!ToQueryInfo(mosInfo, pl, row[4], step))
-	{
-		std::cerr << "Reading file '" << row[4] << "' failed" << std::endl;
-		return false;
-	}
-
-	return true;
-}

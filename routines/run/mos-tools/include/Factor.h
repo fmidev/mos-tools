@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <map>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/numeric/ublas/vector.hpp>
@@ -81,3 +82,17 @@ struct Station
 };
 
 typedef std::map<Station, Weight> Weights;
+
+inline
+std::string Key(const ParamLevel& pl, int step) 
+{
+	step = (step < 150) ? step - pl.stepAdjustment * 3 : step - pl.stepAdjustment * 6;
+	
+	return pl.paramName
+			+ "/"
+			+ pl.levelName
+			+ "/"
+			+ boost::lexical_cast<std::string> (pl.levelValue)
+			+ "@" 
+			+ boost::lexical_cast<std::string> (step); 
+}

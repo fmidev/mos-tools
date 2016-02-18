@@ -124,15 +124,10 @@ bool DistributeWork(int& curstep)
 void Run(const MosInfo& mosInfo, int threadId)
 {
 	printf("Thread %d started\n", threadId);
+
 	MosWorker mosher;
 
-	std::unique_ptr<MosDB> m = std::unique_ptr<MosDB> (MosDBPool::Instance()->GetConnection());
-	std::unique_ptr<NFmiNeonsDB> n = std::unique_ptr<NFmiNeonsDB> (NFmiNeonsDBPool::Instance()->GetConnection());
-
-	mosher.itsMosDB = std::move(m);
-	mosher.itsNeonsDB = std::move(n);
-
-	int curstep = -1;
+	int curstep = -1; // Will change at DistributeWork
 
 	while (DistributeWork(curstep))
 	{
