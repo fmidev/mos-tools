@@ -12,6 +12,7 @@ extern boost::posix_time::ptime ToPtime(const std::string& time, const std::stri
 datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGridPointsInDegrees);
 datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName);
 double Declination(int step, const std::string& originTime);
+FmiInterpolationMethod InterpolationMethod(const std::string& paramName);
 
 MosInterpolator::MosInterpolator()
 {
@@ -248,8 +249,10 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 	NFmiTimeDescriptor tdesc(tlist.FirstTime(), tlist);
 	
 	NFmiParamBag pbag;
-
-	pbag.Add(NFmiDataIdent(NFmiParam(1, "ASDF")));
+	NFmiParam p(1, pl.paramName);
+	p.InterpolationMethod(InterpolationMethod(pl.paramName));
+	
+	pbag.Add(NFmiDataIdent(p));
 
 	NFmiParamDescriptor pdesc(pbag);
 	
@@ -309,7 +312,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 
 	NFmiArea* area = new NFmiLatLonArea(bl, tr);
 
-	NFmiGrid grid (area, ni, nj , kBottomLeft, kLinearly);
+	NFmiGrid grid (area, ni, nj , kBottomLeft, InterpolationMethod(pl.paramName));
 	
 	NFmiHPlaceDescriptor hdesc(grid);
 	
@@ -375,7 +378,7 @@ datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGri
 	int ni = static_cast<int> (fabs(tr.X() - bl.X()) / distanceBetweenGridPointsInDegrees);
 	int nj = static_cast<int> (fabs(tr.Y() - bl.Y()) / distanceBetweenGridPointsInDegrees);
 
-	NFmiGrid grid (sourceInfo.Area(), ni, nj , kBottomLeft, kLinearly);
+	NFmiGrid grid (sourceInfo.Area(), ni, nj , kBottomLeft, sourceInfo.Grid()->InterpolationMethod());
 
 	NFmiHPlaceDescriptor hdesc(grid);
 	
@@ -426,4 +429,16 @@ double Declination(int step, const std::string& originTime)
 
 	return declination;
 	
+}
+
+FmiInterpolationMethod InterpolationMethod(const std::string& paramName)
+{
+	FmiInterpolationMethod method = kLinearly;
+	
+	if (paramName == "RR-KGM2" || paramName == "RRL-KGM2" || paramName == "RRC-KGM2" || paramName == "RH-PRCNT")
+	{
+			method = kNearestPoint;
+	}
+	
+	return method;
 }
