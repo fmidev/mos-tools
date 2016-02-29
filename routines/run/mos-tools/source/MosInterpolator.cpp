@@ -33,7 +33,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 
 	assert(step >= 3);
 
-	if (pl.paramName == "DECLINATION")
+	if (pl.paramName == "DECLINATION-N")
 	{
 		return Declination(step, mosInfo.originTime);
 	}
