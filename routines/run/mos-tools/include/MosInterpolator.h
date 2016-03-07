@@ -19,9 +19,9 @@ public:
 	double GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step);
 
 private:
-	datas GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step);	
+	std::vector<datas> GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step);	
 
-	std::map<std::string, datas> itsDatas;
+	std::map<std::string, std::vector<datas>> itsDatas;
 	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
 
 };

@@ -86,7 +86,7 @@ typedef std::map<Station, Weight> Weights;
 inline
 std::string Key(const ParamLevel& pl, int step) 
 {
-	step = (step < 150) ? step - pl.stepAdjustment * 3 : step - pl.stepAdjustment * 6;
+	step = (step < 150) ? step + pl.stepAdjustment * 3 : step + pl.stepAdjustment * 6;
 	
 	return pl.paramName
 			+ "/"
