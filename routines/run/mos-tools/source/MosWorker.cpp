@@ -2,7 +2,6 @@
 #include <sstream>
 #include <fstream>
 
-#include <boost/foreach.hpp>
 #include "Result.h"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -97,7 +96,7 @@ Weights AdjustWeights(const MosInfo& mosInfo, const Weights& weights, const Weig
 		std::cout << "Current period has a weight of [0..1]: " << yposition << std::endl;
 	}
 	
-	BOOST_FOREACH(const auto& it, weights)
+	for(const auto& it : weights)
 	{
 		const auto station = it.first;
 
@@ -159,7 +158,7 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 	outfile << "#producer_id,analysis_time,station_id,param_id,forecast_period,level_id,level_value,value" << std::endl;
 	
 #endif
-	BOOST_FOREACH(const auto& it, results)
+	for(const auto& it : results)
 	{
 		const auto station = it.first;
 		const auto result = it.second;
@@ -271,10 +270,9 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 
 	std::cout << "Fetching source data for step " << step << std::endl;
 
-	BOOST_FOREACH(auto& it, weights)
+	for(auto& it : weights)
 	{
 		Station station = it.first;
-
 #ifdef DEBUG
 		if (mosInfo.traceOutput)
 		{
@@ -305,33 +303,37 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 				}
 			}
 
-			//if (value == kFloatMissing) return kFloatMissing;
-
-			it.second.values[i] = value;
+			if (value == kFloatMissing)
+			{
+				std::cout << "Missing value for station " << station.id << " " << station.name << " " << Key(pl, step) << std::endl;
+				weights.erase(station);
+				break;
+			}
+			else
+			{
+				it.second.values[i] = value;
+			}
 		}
 	}
 	
-	//if (itsDatas.size() == 0)
-	//{
-	//	return kFloatMissing;
-	//}
-
 	// 3. Apply
 	
 	std::cout << "Applying weights" << std::endl;
 
 	Results results;
 
-	BOOST_FOREACH(const auto& it, weights)
+	for(const auto& it : weights)
 	{
 		Station station = it.first;
 	
 		Result r;
 	
-#ifdef EXTRADEBUG
-		std::cout << it.second.values << 
-				"\n" << it.second.weights  <<
-				"\n" << boost::numeric::ublas::inner_prod(it.second.values, it.second.weights) << std::endl;
+#ifdef DEBUG
+		//if (station.id==1024)
+		std::cout 	//<< it.second.params << "\n"
+				<< it.second.values << "\n"
+				<< it.second.weights << "\n"
+				<< boost::numeric::ublas::inner_prod(it.second.values, it.second.weights) << std::endl;
 #endif
 		r.value = boost::numeric::ublas::inner_prod(it.second.values, it.second.weights);
 		r.weights = it.second;

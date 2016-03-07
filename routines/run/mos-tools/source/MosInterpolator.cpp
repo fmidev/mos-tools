@@ -1,6 +1,7 @@
 #include "MosInterpolator.h"
 #include "NFmiGrib.h"
 #include <NFmiLatLonArea.h>
+#include <NFmiRotatedLatLonArea.h>
 #include <NFmiTimeList.h>
 #include <NFmiMetTime.h>
 #include <NFmiQueryData.h>
@@ -39,15 +40,19 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 	}
 	
 	NFmiPoint latlon(station.longitude, station.latitude);
-	
+
+	// These are cumulative parameters 
 	bool isCumulativeParameter =
 		(pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M");
-	
-	bool isCumulativeRadiationParameter = 
-		(pl.paramName == "FLSEN-JM2" || pl.paramName == "FLLAT-JM2"  || pl.paramName == "RNETSW-WM2"  || pl.paramName == "RADDIRSOLAR-JM2");
 
-	int prevStep = -1;
+	// These are cumulative radiation parameters 
+	bool isCumulativeRadiationParameter = 
+		(pl.paramName == "FLSEN-JM2" || pl.paramName == "FLLAT-JM2" || pl.paramName == "RNETSW-WM2" || pl.paramName == "RNETLW-WM2" || pl.paramName == "RADDIRSOLAR-JM2" || pl.paramName == "RADLW-WM2" || pl.paramName == "RADGLO-WM2");
+
+	int prevStep = (step > 144) ? step - 6 : step - 3;
 	
+	assert(prevStep >= 0 && prevStep <= 234);
+
 	if (itsDatas.find(key) == itsDatas.end())
 	{
 		// Intentionally not catching exceptions here: if error
@@ -55,41 +60,90 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 		
 		itsDatas[Key(pl,step)] = GetData(mosInfo, pl, step);
 		
+		if ((isCumulativeParameter || isCumulativeRadiationParameter) && prevStep > 0)
+		{
+			itsDatas[Key(pl,prevStep)] = GetData(mosInfo, pl, prevStep);
+		}
+	}
+
+	double value = kFloatMissing;
+
+	double scale = 1, base = 0;
+
+	if (pl.paramName == "POTVORT-N" || pl.paramName == "ABSVO-HZ")
+	{
+		scale = 1000000;
+	}
+	else if (pl.paramName == "SD-M" || pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M" )
+	{
+		scale = 1000;
+	}
+	else if (pl.paramName == "ALBEDO-PRCNT" || pl.paramName == "IC-0TO1" || pl.paramName == "LC-0TO1" )
+	{
+		scale = 100;
+	}
+
+	for (datas& d : itsDatas[key])
+	{
+		value = d.second.InterpolatedValue(latlon);
+		assert(value == value);
+
+		if (value == kFloatMissing) continue ; // Try another geometry (if exists)
+
 		if (isCumulativeParameter || isCumulativeRadiationParameter)
 		{
-			prevStep = step - 3;
+			double prevValue = kFloatMissing;
 
-			if (step > 144) prevStep = step - 6;
-
-			if (prevStep != 0)
+			// analysis hour value = 0
+			if (prevStep == 0)
 			{
-				itsDatas[Key(pl,prevStep)] = GetData(mosInfo, pl, prevStep);
+				prevValue = 0;
+			}
+			else
+			{
+				for (datas& d2 : itsDatas[Key(pl, prevStep)])
+				{
+					prevValue = d2.second.InterpolatedValue(latlon);
+					if (prevValue == kFloatMissing)
+					{
+						continue;
+					}
+					else 
+					{
+						break;
+					}
+				}
+			}
+
+			assert(prevValue != kFloatMissing);
+	
+			if (value != kFloatMissing && prevValue != kFloatMissing)
+			{
+				value -= prevValue;
+
+				if (isCumulativeRadiationParameter)
+				{
+					value /= (step-prevStep)*3600;
+				}
+			}
+			else
+			{
+				value = kFloatMissing;
 			}
 		}
-	}
-	
-	double value = itsDatas[key].second.InterpolatedValue(latlon);
-	assert(value == value);
 
-	if (isCumulativeParameter || isCumulativeRadiationParameter)
+		break;
+	}
+
+	if (value != kFloatMissing)
 	{
-		double prevValue = (prevStep == 0) ? 0 : itsDatas[Key(pl, prevStep)].second.InterpolatedValue(latlon);
-	
-		if (value != kFloatMissing && prevValue != kFloatMissing)
-		{
-			value -= prevValue;
-			
-			if (isCumulativeRadiationParameter)
-			{
-				value /= ((step-prevStep)*3600);
-			}
-		}
+		value = value * scale + base;
 	}
-	
+
 	return value;
 }
 
-datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step)
+std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step)
 {
 	int producerId = mosInfo.producerId;
 	std::string levelName = pl.levelName;
@@ -100,12 +154,13 @@ datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int
 	
 	// Radiation is used as power (W/m2)
 
-	if (paramName == "RNETLW-WM2")
+/*	if (paramName == "RNETLW-WM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
 	}
-	else if (paramName == "RADGLO-WM2")
+	else 
+	if (paramName == "RADGLO-WM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
@@ -115,10 +170,11 @@ datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int
 		producerId = 240;
 		levelName = "HEIGHT";
 	}
-	
-	// Precipitation is also *not* cumulative from the forecast start
-	
-	else if (paramName == "RR-KGM2")
+*/	
+	// Precipitation is also *not* cumulative from the forecast start,
+	// it is transformed to one hour precipitation
+
+	if (paramName == "RR-KGM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
@@ -136,7 +192,7 @@ datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int
 		levelName = "HEIGHT";
 		paramName = "RRRL-KGM2";
 	}
-	
+
 	// Erroneus metadata in neons
 	
 	else if (paramName == "TD-K")
@@ -155,9 +211,13 @@ datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int
 
 	if (pl.stepAdjustment < 0)
 	{
-		if (step <= 3)
+#ifdef DEBUG
+		std::cout << "Param " << pl.paramName << "/" << pl.levelName << "/" << pl.levelValue << " at step " << step << " has step adjustment " << pl.stepAdjustment << std::endl;
+#endif
+
+		if (step < 3)
 		{
-			throw std::runtime_error("Previous timestep data requested for time step 0 or 3");
+			throw std::runtime_error("Previous timestep data requested for time step 0");
 		}
 
 		if (step < 144)
@@ -178,25 +238,36 @@ datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int
 	
 	assert(gridgeoms.size());
 
-	std::string tableName = "default";
-	
-	for(const auto& geom : gridgeoms)
+	if (gridgeoms.size() > 1)
 	{
-		if (pl.paramName == "FFG-MS")
+		// order so that GLO is first
+		std::vector<std::vector<std::string>> newgeoms(1);
+
+		for (const auto& geom : gridgeoms)
 		{
-			// Gust needs to be taken from this geometry
-			// since the global one does not have FG10_3 but FG10_1
-			if (geom[0] == "ECEUR0125") tableName = geom[1];
+			std::string geomName = geom[0];
+			if (geomName == "ECGLO0125" || geomName == "ECGLO0100")
+			{
+				newgeoms[0] = geom;
+			}
+			else
+			{
+				newgeoms.push_back(geom);
+			}
 		}
-		else
-		{
-			if (geom[0] == "ECGLO0125") tableName = geom[1];
-		}
+		gridgeoms = newgeoms;
 	}
 
-	std::stringstream query;
+	std::vector<datas> ret;
 
-	query << "SELECT parm_name, lvl_type, lvl1_lvl2, fcst_per, file_location "
+	for(const auto& geom : gridgeoms)
+	{
+	
+		std::string tableName = geom[1];
+
+		std::stringstream query;
+
+		query << "SELECT parm_name, lvl_type, lvl1_lvl2, fcst_per, file_location "
 			   "FROM " << tableName << " "
 			   "WHERE parm_name = upper('" << paramName << "') "
 			   "AND lvl_type = upper('" << levelName << "') "
@@ -204,25 +275,25 @@ datas MosInterpolator::GetData(const MosInfo& mosInfo, const ParamLevel& pl, int
 			   "AND fcst_per = " << step << " "
 			   "ORDER BY dset_id, fcst_per, lvl_type, lvl1_lvl2";
 
-	itsNeonsDB->Query(query.str());
+		itsNeonsDB->Query(query.str());
 
-	auto row = itsNeonsDB->FetchRow();
+		auto row = itsNeonsDB->FetchRow();
 
-	if (row.empty())
-	{
-		std::cerr << "No data found for " << producerId << "/" << paramName << "/" << levelName << "/" << pl.levelValue << " step " << step << std::endl;
-		throw 1;
+		if (row.empty())
+		{
+			continue;
+		}
+
+		ret.push_back(ToQueryInfo(pl, step, row[4]));
+		break;
 	}
 
-	try
+	if (ret.empty())
 	{
-		return ToQueryInfo(pl, step, row[4]);
+		throw std::runtime_error("No data found for " + boost::lexical_cast<std::string> (producerId) + "/" + Key(pl, step));
 	}
-	catch (...)
-	{
-		std::cerr << "Reading file '" << row[4] << "' failed" << std::endl;
-		throw 1;
-	}
+
+	return ret;
 }
 
 datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
@@ -232,11 +303,11 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 
 	if (!reader.Open(fileName))
 	{
+		std::cerr << "File open failed" << std::endl;
 		throw 1;
 	}
 
-	std::cout << "Reading file '" << fileName << "' for parameter " << pl << std::endl;
-	
+	std::cout << "Reading file '" << fileName << "'" << std::endl;
 	reader.NextMessage();
 	
 	long dataDate = reader.Message().DataDate();
@@ -262,9 +333,9 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 
 	long gridType = reader.Message().GridType();
 	
-	if (gridType != 0)
+	if (gridType != 0 && gridType != 10)
 	{
-		throw std::runtime_error("Supporting only latlon areas");
+		throw std::runtime_error("Invalid area");
 	}
 
 	long ni = reader.Message().SizeX();
@@ -281,7 +352,12 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 	NFmiPoint bl, tr;
 
 	bl.X(fx);
-	tr.X(lx+360); // TODO FIX THIS
+	tr.X(lx);
+
+	if (lx == -0.125)
+	{
+		tr.X(lx+360);
+	}
 
 	bl.Y(fy);
 	tr.Y(ly);
@@ -309,10 +385,22 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 			}
 		}
 	}
+	
+	NFmiArea* area = 0;
 
-	NFmiArea* area = new NFmiLatLonArea(bl, tr);
+	if (gridType == 0)
+	{
+		area = new NFmiLatLonArea(bl, tr);
+	}
+	else if (gridType == 10)
+	{
+		double spx = reader.Message().SouthPoleX();
+		double spy = reader.Message().SouthPoleY();
 
-	NFmiGrid grid (area, ni, nj , kBottomLeft, InterpolationMethod(pl.paramName));
+		area = new NFmiRotatedLatLonArea(bl, tr, NFmiPoint(spx, spy), NFmiPoint(0, 0), NFmiPoint(1, 1), true);
+	}
+
+	NFmiGrid grid (area, ni, nj, kBottomLeft, InterpolationMethod(pl.paramName));
 	
 	NFmiHPlaceDescriptor hdesc(grid);
 	
@@ -435,9 +523,9 @@ FmiInterpolationMethod InterpolationMethod(const std::string& paramName)
 {
 	FmiInterpolationMethod method = kLinearly;
 	
-	if (paramName == "RR-KGM2" || paramName == "RRL-KGM2" || paramName == "RRC-KGM2" || paramName == "RH-PRCNT")
+	if (paramName == "RR-KGM2" || paramName == "RRL-KGM2" || paramName == "RRC-KGM2")
 	{
-			method = kNearestPoint;
+		method = kNearestPoint;
 	}
 	
 	return method;

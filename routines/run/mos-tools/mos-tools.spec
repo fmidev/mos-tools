@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.2.12
+Version:        16.3.4
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -48,6 +48,12 @@ rm -rf %{buildroot}
 %{_bindir}/mosse
 
 %changelog
+* Fri Mar  4 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.4-1.fmi
+- Remove himan-calculated fields since they are a bit different than what mos needs
+* Thu Mar  3 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.3-1.fmi
+- Improved logic for fetching data
+* Wed Mar  2 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.2-1.fmi
+- Geometries ECEUR0100 and ECGLO0100
 * Fri Feb 12 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.2.12-1.fmi
 - New newbase and fmidb
 * Wed Sep  2 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.2-1.fmi
