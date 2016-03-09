@@ -125,7 +125,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 
 				if (isCumulativeRadiationParameter)
 				{
-					value /= (step-prevStep)*3600;
+					value /= ((step-prevStep)*3600);
 				}
 			}
 			else
