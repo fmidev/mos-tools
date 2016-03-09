@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.3.4
+Version:        16.3.9
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -48,6 +48,8 @@ rm -rf %{buildroot}
 %{_bindir}/mosse
 
 %changelog
+* Wed Mar  9 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.9-1.fmi
+- Fix for declination
 * Fri Mar  4 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.4-1.fmi
 - Remove himan-calculated fields since they are a bit different than what mos needs
 * Thu Mar  3 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.3-1.fmi
