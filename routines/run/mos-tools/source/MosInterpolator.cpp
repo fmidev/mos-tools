@@ -356,7 +356,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 	bl.X(fx);
 	tr.X(lx);
 
-	if (lx == -0.125)
+	if (lx < 0)
 	{
 		tr.X(lx+360);
 	}
@@ -515,7 +515,7 @@ double Declination(int step, const std::string& originTime)
 	// eli esim. ajanhetkelle 2.1. klo 15 daydoy=1.625. Huom. päivä ei siis ala indeksistä 1, vaan 0! 
 	// Ylläolevat laskut antavat ulos asteina deklinaation.
 
-	const double declination = -asin(0.39779 * cos(0.98565 / 360 * 2 * PI * ((daydoy + 10) + 1.914 / 360 * 2 * PI * sin(0.98565 / 360 * 2 * PI * (daydoy - 2))))) * 360 / 2 / PI;
+	const double declination = -asin(0.39779 * cos(0.98565 / 360 * 2 * PI * (daydoy + 10) + 1.914 / 360 * 2 * PI * sin(0.98565 / 360 * 2 * PI * (daydoy - 2)))) * 360 / 2 / PI;
 
 	return declination;
 	

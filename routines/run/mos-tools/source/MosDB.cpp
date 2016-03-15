@@ -8,7 +8,6 @@
 
 #ifdef DEBUG
 #include <boost/numeric/ublas/io.hpp> 
-extern std::string Key(const ParamLevel& pl, int step) ;
 #endif
 
 std::string ToHstore(const std::vector<ParamLevel>& keys, const boost::numeric::ublas::vector<double>& values)
@@ -19,7 +18,10 @@ std::string ToHstore(const std::vector<ParamLevel>& keys, const boost::numeric::
 
 	for (size_t i = 0; i < keys.size(); i++)
 	{
-		std::string key = keys[i].paramName + "/" + keys[i].levelName + "/" + boost::lexical_cast<std::string> (keys[i].levelValue);
+		std::string key = keys[i].paramName + "/" + 
+					keys[i].levelName + "/" + 
+					boost::lexical_cast<std::string> (keys[i].levelValue) + "/" + 
+					boost::lexical_cast<std::string> (keys[i].stepAdjustment);
 		ret << key << " => " << values[i] << ","; 
 	}
 	

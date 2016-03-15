@@ -329,7 +329,7 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 		Result r;
 	
 #ifdef DEBUG
-		//if (station.id==1024)
+		if (station.id==2874)
 		std::cout 	//<< it.second.params << "\n"
 				<< it.second.values << "\n"
 				<< it.second.weights << "\n"
