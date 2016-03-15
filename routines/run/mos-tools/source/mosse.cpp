@@ -159,7 +159,7 @@ int main(int argc, char ** argv)
 
 	std::string ref_prod = prodinfo["ref_prod"];
 
-	NFmiNeonsDB::Instance().Query("SELECT max(base_date) FROM as_grid WHERE model_type = '" + ref_prod + "' AND rec_cnt_dset > 0 AND geom_name IN ('ECGLO0125', 'ECGLO0100') AND to_char(base_date, 'HH24') IN ('00','12')");
+	NFmiNeonsDB::Instance().Query("SELECT max(base_date) FROM as_grid WHERE model_type = '" + ref_prod + "' AND rec_cnt_dset > 0 AND geom_name IN ('ECGLO0100') AND to_char(base_date, 'HH24') IN ('00','12')");
 	
 	auto row = NFmiNeonsDB::Instance().FetchRow();
 	

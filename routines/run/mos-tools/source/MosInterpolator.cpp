@@ -248,7 +248,8 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		for (const auto& geom : gridgeoms)
 		{
 			std::string geomName = geom[0];
-			if (geomName == "ECGLO0125" || geomName == "ECGLO0100")
+
+			if (geomName == "ECGLO0100")
 			{
 				newgeoms[0] = geom;
 			}
