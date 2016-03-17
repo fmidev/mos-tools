@@ -138,9 +138,12 @@ def Load(infile_name):
 
 	rows = LoadToDatabase(cur, prevPartition,buff, colbuff)
 	totrows += rows
-
+	totlines += lines
 	print "total rows: %d loaded to database: %d" % (totlines, totrows)
 	conn.commit()
+
+	if totlines != totrows:
+		sys.exit(1)
 
 def main():
 
@@ -150,7 +153,6 @@ def main():
 	ahour = None
 	target_param_name = None
 	season_id = None
-
 
 	Load(opts.file[0])
 
