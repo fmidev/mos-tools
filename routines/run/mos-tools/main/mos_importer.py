@@ -5,6 +5,7 @@ import os
 import psycopg2
 import argparse
 import math
+import StringIO
 
 PARTITIONS = []
 
@@ -26,7 +27,47 @@ def ReadPartitions(cur):
 	
 	for row in rows:
 		PARTITIONS.append(row[0])
-	
+
+def LoadToDatabase(cur, tablename, buff, colbuff):
+	sql = "INSERT INTO data." + tablename + " (station_id, analysis_time, forecast_period, parameter_id, level_id, level_value, value) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+
+	ret = 0
+
+	try:
+		cur.execute("SAVEPOINT insert")
+
+		f = StringIO.StringIO("\n".join(buff))
+
+		cur.copy_from(f, tablename, columns=['station_id', 'analysis_time', 'forecast_period', 'parameter_id', 'level_id', 'level_value', 'value'])
+
+		ret = len(buff)
+		cur.execute("RELEASE SAVEPOINT insert")
+
+	except psycopg2.IntegrityError,e:
+		if e.pgcode == "23505":
+			
+			print "COPY failed, switch to INSERT"
+	#		print cur.mogrify(sql, (station_id, analysis_time, period, param_id, level_id, level_value, arr[6]))
+			cur.execute("ROLLBACK TO SAVEPOINT insert")
+
+			for row in colbuff:
+				ret = ret+1
+
+				try:
+					cur.execute("SAVEPOINT insert")
+					cur.execute(sql, row)
+					cur.execute("RELEASE SAVEPOINT insert")
+
+				except psycopg2.IntegrityError,e:
+					if e.pgcode != "23505":
+						print e
+						sys.exit(1)
+					cur.execute("ROLLBACK TO SAVEPOINT insert")
+					cur.execute("RELEASE SAVEPOINT insert")
+		else:
+			print e
+			sys.exit(1)
+	return ret
 
 def Load(infile_name):
 	infile = open (infile_name)
@@ -38,7 +79,12 @@ def Load(infile_name):
 	cur = conn.cursor()
 	ReadPartitions(cur)
 	
-	count = 0
+	lines = 0
+	totlines = 0
+	totrows = 0
+	prevPartition = None
+	buff = [] # data to be uploaded with COPY
+	colbuff = [] # data to be uploaded with INSERT if COPY fails
 
 	for line in infile:
 		line = line.strip()
@@ -56,8 +102,7 @@ def Load(infile_name):
 		param_id = int(arr[3])
 		level_id = int(arr[4])
 		level_value = int(arr[5])
-
-		count = count+1
+		value = arr[6]
 
 		partition = None
 	
@@ -69,28 +114,32 @@ def Load(infile_name):
 
 		if not partition in PARTITIONS:
 			partition = "previ_ecmos_narrow"
-			
-		if count % 10000 == 0:
-			print "Insert row count: %d" % (count)
-			conn.commit()
-		
-		sql = "INSERT INTO data." + partition + " (station_id, analysis_time, forecast_period, parameter_id, level_id, level_value, value) VALUES (%s, %s, %s, %s, %s, %s, %s)"
 
-		try:
-#			print cur.mogrify(sql, (station_id, analysis_time, period, param_id, level_id, level_value, arr[6]))
-			cur.execute(sql, (station_id, analysis_time, period, param_id, level_id, level_value, arr[6]))
+		if prevPartition == None:
+			prevPartition = partition
 
-
-		except psycopg2.IntegrityError,e:
-			if e.pgcode == "23505":
-#				sql =""
-
-				print e	
-#				sys.exit(1)
-			else:
-				print e	
+		if partition != prevPartition:
+			rows = LoadToDatabase(cur, prevPartition,buff, colbuff)
+			prevPartition = partition
+			print "Insert row count: %d" % (rows)
+			totrows += rows
+			totlines += lines
+			if rows != lines:
+				print "Error: lines read=%d but rows loaded=%d" % (lines, rows)
 				sys.exit(1)
-	
+			lines = 0
+			buff = []
+			colbuff = []
+
+		buff.append("%s\t%s\t%s\t%s\t%s\t%s\t%s" % (station_id, analysis_time, period, param_id, level_id, level_value, value))
+		colbuff.append([station_id, analysis_time, period, param_id, level_id, level_value, value])
+
+		lines = lines+1
+
+	rows = LoadToDatabase(cur, prevPartition,buff, colbuff)
+	totrows += rows
+
+	print "total rows: %d loaded to database: %d" % (totlines, totrows)
 	conn.commit()
 
 def main():
