@@ -286,23 +286,17 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 		{
 			ParamLevel pl = it.second.params[i];
 
-			double value;
+			double value = kFloatMissing;
 
-			if (otherWeights.size() == 0 && it.second.weights[i] == 0)
+			if (pl.paramName == "INTERCEPT-N")
 			{
-				value = 0;
+				value = 1;
 			}
 			else
 			{
-
-				value = 1;
-			
-				if (pl.paramName != "INTERCEPT-N")
-				{
-					value = itsMosInterpolator.GetValue(mosInfo, station, pl, step);
-				}
+				value = itsMosInterpolator.GetValue(mosInfo, station, pl, step);
 			}
-
+			
 			if (value == kFloatMissing)
 			{
 				std::cout << "Missing value for station " << station.id << " " << station.name << " " << Key(pl, step) << std::endl;
