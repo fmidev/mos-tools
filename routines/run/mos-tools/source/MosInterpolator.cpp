@@ -36,11 +36,22 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 
 	assert(step >= 3);
 
+	// Special cases
+	
+	// Declination is not in database
+
 	if (pl.paramName == "DECLINATION-N")
 	{
 		return Declination(step, mosInfo.originTime);
 	}
+
+	// Following parameters are not defined for step > 144
 	
+	if (step > 144 && (pl.paramName == "FFG3H-MS" || pl.paramName == "MAXT2M-K" || pl.paramName == "MINT2M-K"))
+	{
+		return kFloatMissing;
+	}
+
 	NFmiPoint latlon(station.longitude, station.latitude);
 
 	// These are cumulative parameters 

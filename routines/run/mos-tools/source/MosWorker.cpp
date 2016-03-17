@@ -297,11 +297,9 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 				value = itsMosInterpolator.GetValue(mosInfo, station, pl, step);
 			}
 			
-			if (value == kFloatMissing)
+			if (value == kFloatMissing && it.second.weights[i] != 0)
 			{
-				std::cout << "Missing value for station " << station.id << " " << station.name << " " << Key(pl, step) << std::endl;
-				weights.erase(station);
-				break;
+				throw std::runtime_error("Missing value for station " + boost::lexical_cast<std::string> (station.id) + " " + station.name + " " + Key(pl, step));
 			}
 			else
 			{
