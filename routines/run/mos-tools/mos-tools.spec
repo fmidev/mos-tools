@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.3.15
+Version:        16.3.17
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -46,11 +46,17 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,0755)
 %{_bindir}/mosse
+%{_bindir}/mos_importer.py
+%{_bindir}/mos_factor_loader.py
+
 
 %changelog
+* Thu Mar 17 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.17-1.fmi
+- Write source value to trace even if weight=0
+- Add mos_importer.py
 * Tue Mar 15 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.15-1.fmi
 - Fix for ECGLO0100
-* Wed Mar 10 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.10-1.fmi
+* Thu Mar 10 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.10-1.fmi
 - Another fix for declination
 * Wed Mar  9 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.9-1.fmi
 - Fix for declination
