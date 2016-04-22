@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.3.17
+Version:        16.4.22
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Apr 22 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.4.22-1.fmi
+- New periods 2&4
 * Thu Mar 17 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.3.17-1.fmi
 - Write source value to trace even if weight=0
 - Add mos_importer.py
