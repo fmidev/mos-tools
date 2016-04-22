@@ -22,7 +22,6 @@ struct Options
 	std::string mosLabel;
 	std::string paramName;
 	
-	bool sineWaveTransition;
 	bool trace;
 
 	Options()
@@ -33,7 +32,6 @@ struct Options
 		, stationId(-1)
 		, mosLabel("")
 		, paramName("")
-		, sineWaveTransition(false)
 		, trace(false)
 	{}
 };
@@ -55,7 +53,6 @@ void ParseCommandLine(int argc, char ** argv)
 	("step-length,l", po::value(&opts.stepLength), "step length")
 	("station-id,S", po::value(&opts.stationId), "station id, comma separated list")
 	("parameter,p", po::value(&opts.paramName), "parameter name (neons-style)")
-	("sine", "apply weight transition between periods using sine wave factor (default false)")
 	("trace", "write trace information to log and database (default false)")
 	;
 
@@ -78,11 +75,6 @@ void ParseCommandLine(int argc, char ** argv)
 		std::cout << std::endl << "Examples:" << std::endl;
 		std::cout << "  mosse -s 3 -e 6 -l 3 -m MOS_ECMWF_r144 --trace" << std::endl;
 		exit(1);
-	}
-
-	if (opt.count("sine"))
-	{
-		opts.sineWaveTransition = true;
 	}
 	
 	if (opt.count("trace"))
@@ -169,7 +161,6 @@ int main(int argc, char ** argv)
 	}
 
 	mosInfo.originTime = row[0];
-	mosInfo.sineWaveTransition = opts.sineWaveTransition;
 	mosInfo.traceOutput = opts.trace;
 
 #ifdef DEBUG

@@ -47,89 +47,6 @@ boost::posix_time::ptime ToPtime(const std::string& time, const std::string& tim
 	return p;
 }
 
-double XPosition(const MosInfo& mosInfo, const Weight& weight)
-{
-	// position of current origin time within season
-
-	using namespace boost::posix_time;
-	
-	ptime epoch = time_from_string("1970-01-01 00:00:00.000");
-	
-	auto periodStart = ToPtime(weight.startDate, "%Y%m%d");
-	auto periodStop = ToPtime(weight.stopDate, "%Y%m%d");
-
-	auto periodPosition = ToPtime(mosInfo.originTime.substr(0,8), "%Y%m%d");
-	
-	long long start = (periodStart - epoch).total_milliseconds() / 1000;
-	long long stop = (periodStop - epoch).total_milliseconds() / 1000;
-	long long pos = (periodPosition - epoch).total_milliseconds() / 1000;
-	
-	assert(pos >= start && pos < stop);
-
-	double xposition = (pos - start) / static_cast<double> ((stop - start));
-	
-	assert (xposition >= 0 && xposition <= 1);
-
-	if (mosInfo.traceOutput)
-	{
-		std::cout << "Period start: " << ToString(periodStart, "%Y%m%d") << " Period stop: " << ToString(periodStop, "%Y%m%d") << " Current date: " << ToString(periodPosition, "%Y%m%d") << std::endl;
-		std::cout << "Relative position of current forecast within period [0..1]: " << xposition << std::endl;
-	}
-
-	return xposition;
-}
-
-Weights AdjustWeights(const MosInfo& mosInfo, const Weights& weights, const Weights& otherWeights, double xposition)
-{
-	// using sin(x) to adjust weights between current season and other season
-	
-	assert(weights.size() == otherWeights.size());
-
-	// x = 0 --> 0
-	// x = 0.5 --> 1
-	// x = 1 --> 0
-	
-	double yposition = sin(3.1415 * xposition) * 0.5;
-
-	if (mosInfo.traceOutput)
-	{
-		std::cout << "Current period has a weight of [0..1]: " << yposition << std::endl;
-	}
-	
-	for(const auto& it : weights)
-	{
-		const auto station = it.first;
-
-		if (otherWeights.find(station) == otherWeights.end())
-		{
-			// no other weight for this station
-			continue; 
-		}
-		
-		const auto weight = it.second;
-		const auto otherWeight = otherWeights.at(station);
-		
-		for (size_t i = 0; i < otherWeight.weights.size(); i++)
-		{
-			double w = weight.weights[i];
-			double ow = otherWeight.weights[i];
-			double nw = w;
-
-			if (w != ow)
-			{
-				nw = yposition * w + (1 - yposition) * nw ;
-				
-				if (mosInfo.traceOutput)
-				{
-					std::cout << "Current period weight: " << w << "\tOther period weight: " << ow << "\tNew weight: " << nw << std::endl;
-				}
-			}
-		}
-	}
-
-	return weights;
-}
-
 void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 {
 
@@ -244,26 +161,8 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 
 	if (weights.empty())
 	{
-		std::cerr << "No weights for step " << step << std::endl;
+		std::cerr << "No weights for analysis time " << mosInfo.originTime << " step " << step << std::endl;
 		return false;
-	}
-	
-	Weights otherWeights;
-	
-	if (mosInfo.sineWaveTransition)
-	{
-		double xpos = XPosition(mosInfo, weights.begin()->second);
-
-		otherWeights = itsMosDB->GetWeights(mosInfo, step, xpos);
-		
-		if (otherWeights.empty())
-		{
-			std::cerr << "No weights for season outside current, not adjusting weights" << std::endl;
-		}
-		else
-		{
-			weights = AdjustWeights(mosInfo, weights, otherWeights, xpos);
-		}
 	}
 	
 	// 2. Get raw forecasts

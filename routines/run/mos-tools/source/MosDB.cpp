@@ -1,5 +1,6 @@
 #include "MosDB.h"
 #include <sstream>
+#include <iomanip>
 #include <unistd.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
@@ -52,10 +53,9 @@ MosDB::~MosDB()
 	Disconnect();
 }
 
-Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
-{
-	assert(relativity >= 0 && relativity <= 1);
 
+Weights MosDB::GetWeights(const MosInfo& mosInfo, int step)
+{
 	Weights weights;
 
 	std::stringstream query;
@@ -63,52 +63,24 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 	// get period information
 
 	std::string atime = mosInfo.originTime.substr(0,8);
-	
+
 	int year = boost::lexical_cast<int> (mosInfo.originTime.substr(0, 4));
+	int month = boost::lexical_cast<int> (mosInfo.originTime.substr(4, 2));
+	int day = boost::lexical_cast<int> (mosInfo.originTime.substr(6, 2));
 	
-	// This is a seemingly complex query that fetches several critical values with one query
-	// First we create a list of dates using SQL WITH sub-query. mos_period table only holds
-	// months and days for period start/stop, so in this query we create an actual date with year
-	// part also so it's easier to compare dates.
-	//
-	// Since besides the current period we might also be interested in the previous period or
-	// next period, we create a union query that includes previous and next year as well.
-	//
-	// In the actual query part (after WITH) we select previous, current and next values
-	// all at once using SQL LEAD() and LAG().
-	
-	query << "WITH dates AS\n(";
-	
-	for (int i = -1; i <= 1; i++)
+	if (month == 2 && day == 29)
 	{
-		int nyear = year + i;
-	
-		query << "SELECT id, "
-			<< "to_date('" << nyear << "' || to_char(start_month, 'FM09') || to_char(start_day, 'FM09'), 'yyyymmdd') AS start_date, "
-			<< "CASE WHEN CAST(stop_month AS int) < CAST(start_month AS int)"
-			<< "THEN to_date(CAST('" << nyear << "' AS int)+1 || to_char(stop_month, 'FM09') || to_char(stop_day, 'FM09'), 'yyyymmdd') "
-			<< "ELSE to_date('" << nyear << "' || to_char(stop_month, 'FM09') || to_char(stop_day, 'FM09'), 'yyyymmdd') END AS stop_date "
-			<< " FROM mos_period "
-			;
-	
-		if (i < 1)
-		{
-			query << "\nUNION ALL\n";
-		}			
+		// LOL karkauspäivä
+		day = 28;
 	}
-	
-	query << " ORDER BY start_date, stop_date)\n"
-			<< "SELECT id, to_char(start_date, 'YYYYMMDD'), to_char(stop_date, 'YYYYMMDD'), "
-			<< "lag_id, to_char(lag_start_date, 'YYYYMMDD'), to_char(lag_stop_date, 'YYYYMMDD'), "
-			<< "lead_id, to_char(lead_start_date, 'YYYYMMDD'), to_char(lead_stop_date, 'YYYYMMDD') "
-			<< " FROM "
-			<< "(SELECT d.id, d.start_date, d.stop_date,"
-			<< "LAG(d.id,1) OVER () AS lag_id, LAG(d.start_date,1) OVER () AS lag_start_date, LAG(d.stop_date,1) OVER () AS lag_stop_date,"
-			<< "LEAD(d.id,1) OVER () AS lead_id,LEAD(d.start_date,1) OVER () AS lead_start_date, LEAD(d.stop_date,1) OVER () AS lead_stop_date "
-			<< "FROM dates d) ss WHERE "
-			<< "start_date <= to_date('" << atime << "', 'yyyymmdd') AND stop_date >= to_date('" << atime <<  "', 'yyyymmdd') "
-			;
-	
+
+	query << "WITH times AS ("
+			<< "SELECT id,CASE "
+			<< "WHEN id = 1 THEN to_date('" << (year-1) << "-'||start_month||'-'||start_day , 'yyyy-mm-dd') "
+			<< "ELSE to_date('" << year << "-'||start_month||'-'||start_day , 'yyyy-mm-dd') END AS start,"
+			<< "to_date('" << year << "-'||stop_month||'-'||stop_day, 'yyyy-mm-dd') AS stop FROM mos_period) "
+			<< "SELECT id FROM times WHERE to_date('" << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setfill('0') << std::setw(2) << day << "', 'yyyy-mm-dd') BETWEEN start AND stop";
+
 	Query(query.str());
 
 	auto row = FetchRow();	
@@ -117,38 +89,14 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 	{
 		return weights;
 	}
-
-	std::string period;
-	std::string startDate;
-	std::string stopDate;
 	
-	if (relativity < 0.5)
-	{
-		period = row[3];
-		startDate = row[4];
-		stopDate = row[5];
-	}
-	else if (fabs(relativity - 0.5) < 0.001)
-	{
-		period = row[0];
-		startDate = row[1];
-		stopDate = row[2];
-	}
-	else if (relativity > 0.5)
-	{
-		period = row[6];
-		startDate = row[7];
-		stopDate = row[8];
-	}
-	
-	if (period.empty())
-	{
-		return weights;
-	}
-
-	int periodId = boost::lexical_cast<int> (period);
-	periodId=1;
 	query.str("");
+	
+	int periodId = boost::lexical_cast<int> (row[0]);
+		
+#ifdef EXTRADEBUG
+	std::cout << "Got period id " << periodId << std::endl;
+#endif
 	
 	query << "SELECT "
 		<< "CAST(akeys(f.weights) AS text) AS weight_keys, " // need to cast hstore to text in order for otl not to truncate the resulting string
@@ -171,7 +119,7 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 		<< "analysis_hour = " << mosInfo.originTime.substr(8,2) << " AND "
 		<< "pe.id = " << periodId << " "
 		<< "ORDER BY wmo_id, forecast_period, weight_keys";
-
+	
 	Query(query.str());
 
 	while (true)
@@ -218,8 +166,8 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 		}
 
 		w.step = step;
-		w.startDate = startDate;
-		w.stopDate = stopDate;
+		//w.startDate = startDate;
+		//w.stopDate = stopDate;
 		w.periodId = periodId;
 
 		s.id = boost::lexical_cast<int> (row[6]);
@@ -232,17 +180,10 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step, double relativity)
 
 		if (!w.params.empty()) weights[s] = w;
 	}
-	
-//	std::cout << w.params.size() << " vs " << w.weights.size() << std::endl;
-	
+		
 	if (mosInfo.traceOutput)
-	{
-		std::string periodInfo = "current";
-	
-		if (relativity < 0.5) periodInfo = "previous";
-		else if (relativity > 0.5) periodInfo = "next";
-	
-		std::cout << "Read " << periodInfo << " period weights for " << weights.size() << " stations" << std::endl;
+	{	
+		std::cout << "Read weights for " << weights.size() << " stations" << std::endl;
 	}
 	
 	return weights;
