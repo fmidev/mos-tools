@@ -14,7 +14,8 @@ public:
 	~MosDB();
 
 	MosInfo GetMosInfo(const std::string& mosLabel);
-	Weights GetWeights(const MosInfo& mosInfo, int step, double relativity = 0.5);
+	//Weights GetWeights(const MosInfo& mosInfo, int step, double relativity = 0.5);
+	Weights GetWeights(const MosInfo& mosInfo, int step);
 	void WriteTrace(const MosInfo& mosInfo, const Results& results, const std::string& run_time);
 
 };
