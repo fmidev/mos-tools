@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.5.9
+Version:        16.5.26
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -18,7 +18,7 @@ BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  libsmartmet-newbase-devel >= 16.5.4
-Requires:	libfmidb >= 16.2.12
+Requires:	libfmidb >= 16.5.26
 Requires:       jasper-libs
 Requires:       libpqxx
 Requires:	grib_api >= 1.14.0
@@ -50,6 +50,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Thu May 26 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.5.26-1.fmi
+- fmidb header change
 * Mon May  9 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.5.9-1.fmi
 - New newbase
 * Fri Apr 22 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.4.22-1.fmi
