@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.5.26
+Version:        16.6.13
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -10,18 +10,18 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 15.8.21
-BuildRequires:  libfmidb-devel >= 16.2.12
-BuildRequires:  grib_api-devel >= 1.14.0
+BuildRequires:  libfmigrib-devel >= 16.6.13
+BuildRequires:  libfmidb-devel >= 16.6.6
+BuildRequires:  grib_api-devel >= 1.15.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  libsmartmet-newbase-devel >= 16.5.4
-Requires:	libfmidb >= 16.5.26
+Requires:	libfmidb >= 16.6.6
 Requires:       jasper-libs
 Requires:       libpqxx
-Requires:	grib_api >= 1.14.0
+Requires:	grib_api >= 1.15.0
 Requires:       libsmartmet-newbase >= 16.5.4
 Provides:	mosse
 
@@ -50,6 +50,12 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Jun  13 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.13-1.fmi
+- New fmigrib
+* Mon Jun  6 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.6-1.fmi
+- New fmidb
+* Wed Jun  1 2016 Mikko Aalto <mikko.aalto@fmi.fi> - 16.6.1-1.fmi
+- New grib_api 1.15
 * Thu May 26 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.5.26-1.fmi
 - fmidb header change
 * Mon May  9 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.5.9-1.fmi
