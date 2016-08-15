@@ -41,10 +41,5 @@ rpm:    clean
 install:
 	mkdir -p $(bindir)
 	$(INSTALL_PROG) build/release/mosse $(bindir)
-#	$(INSTALL_PROG) build/release/create_grid_tables $(bindir)
-
-#	if [ $(shell grep -ic suse /etc/issue) -eq 0 ]; then \
-#		$(INSTALL_PROG) main/radon_tables.py $(bindir) ; \
-#		$(INSTALL_PROG) main/previ_to_radon.py $(bindir) ; \
-#		$(INSTALL_PROG) main/previ_to_neons.py $(bindir) ; \
-#	fi;
+	$(INSTALL_PROG) main/mos_importer.py $(bindir)
+	$(INSTALL_PROG) main/mos_factor_loader.py $(bindir)
