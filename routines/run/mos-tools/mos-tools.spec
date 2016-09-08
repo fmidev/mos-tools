@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.8.23
+Version:        16.9.8
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -11,15 +11,15 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
-BuildRequires:  libfmidb-devel >= 16.8.23
+BuildRequires:  libfmidb-devel
 BuildRequires:  grib_api-devel >= 1.15.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  libsmartmet-newbase-devel >= 16.5.4
-Requires:	libfmidb >= 16.8.23
-Requires:	libfmigrib >= 16.8.15
+Requires:	libfmidb >= 16.9.8
+Requires:	libfmigrib >= 16.9.8
 Requires:       jasper-libs
 Requires:       libpqxx
 Requires:	grib_api >= 1.15.0
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Thu Sep  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.9.8-1.fmi
+- New release
 * Tue Aug 23 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.23-1.fmi
 - New release
 * Mon Aug 15 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.15-1.fmi
