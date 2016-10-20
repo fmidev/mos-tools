@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.9.8
+Version:        16.10.20
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -12,7 +12,7 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmidb-devel
-BuildRequires:  grib_api-devel >= 1.15.0
+BuildRequires:  eccodes-devel
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
@@ -22,7 +22,7 @@ Requires:	libfmidb >= 16.9.8
 Requires:	libfmigrib >= 16.9.8
 Requires:       jasper-libs
 Requires:       libpqxx
-Requires:	grib_api >= 1.15.0
+Requires:	eccodes
 Requires:       libsmartmet-newbase >= 16.5.4
 Provides:	mosse
 
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Thu Oct 20 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.20-1.fmi
+- Replacing grib_api with eccodes
 * Thu Sep  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.9.8-1.fmi
 - New release
 * Tue Aug 23 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.23-1.fmi
