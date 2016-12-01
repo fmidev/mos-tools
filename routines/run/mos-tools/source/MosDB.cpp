@@ -74,12 +74,27 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step)
 		day = 28;
 	}
 
+	// Create a list of dates, like:
+	// 
+	// id |   start    |    stop    
+	// ----+------------+------------
+	// 1 | 2015-12-01 | 2016-02-28
+	// 2 | 2016-03-01 | 2016-05-31
+	// 3 | 2016-06-01 | 2016-08-31
+	// 4 | 2016-09-01 | 2016-11-30
+	// 1 | 2016-12-01 | 2017-02-28
+
 	query << "WITH times AS ("
-			<< "SELECT id,CASE "
-			<< "WHEN id = 1 THEN to_date('" << (year-1) << "-'||start_month||'-'||start_day , 'yyyy-mm-dd') "
-			<< "ELSE to_date('" << year << "-'||start_month||'-'||start_day , 'yyyy-mm-dd') END AS start,"
-			<< "to_date('" << year << "-'||stop_month||'-'||stop_day, 'yyyy-mm-dd') AS stop FROM mos_period) "
-			<< "SELECT id FROM times WHERE to_date('" << year << "-" << std::setfill('0') << std::setw(2) << month << "-" << std::setfill('0') << std::setw(2) << day << "', 'yyyy-mm-dd') BETWEEN start AND stop";
+		<< "SELECT id,CASE "
+		<< "WHEN id = 1 THEN to_date('" << (year-1) << "-'||start_month||'-'||start_day , 'yyyy-mm-dd') "
+		<< "ELSE to_date('" << year << "-'||start_month||'-'||start_day , 'yyyy-mm-dd') END AS start,"
+		<< "to_date('" << year << "-'||stop_month||'-'||stop_day, 'yyyy-mm-dd') AS stop FROM mos_period "
+		<< "UNION "
+		<< "SELECT id, "
+		<< "to_date('" << year << "-'||start_month||'-'||start_day , 'yyyy-mm-dd'),"
+		<< "to_date('" << (year+1) << "-'||stop_month||'-'||stop_day, 'yyyy-mm-dd') FROM mos_period WHERE id = 1) "
+		<< "SELECT id FROM times WHERE to_date('" << year << "-" << std::setfill('0') << std::setw(2) 
+		<< month << "-" << std::setfill('0') << std::setw(2) << day << "', 'yyyy-mm-dd') BETWEEN start AND stop";
 
 	Query(query.str());
 
