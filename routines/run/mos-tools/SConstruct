@@ -59,7 +59,7 @@ env.Append(LIBPATH = librarypaths)
 
 libraries = []
 
-libraries.append('smartmet_newbase')
+libraries.append('smartmet-newbase')
 libraries.append('fmidb')
 libraries.append('pqxx')
 libraries.append('clntsh')

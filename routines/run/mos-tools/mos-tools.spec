@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        16.11.8
+Version:        17.1.23
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -17,13 +17,13 @@ BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
-BuildRequires:  libsmartmet-newbase-devel >= 16.5.4
+BuildRequires:  smartmet-library-newbase-devel
 Requires:	libfmidb >= 16.9.8
-Requires:	libfmigrib >= 16.11.8
+Requires:	libfmigrib >= 16.11.4
 Requires:       jasper-libs
 Requires:       libpqxx
 Requires:	eccodes
-Requires:       libsmartmet-newbase >= 16.5.4
+Requires:       smartmet-library-newbase
 Provides:	mosse
 
 AutoReqProv:	no
@@ -51,6 +51,10 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Jan 23 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.1.23-1.fmi
+- Newbase RPM name change
+* Thu Dec  1 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.12.1-1.fmi
+- Fixed query fetching period id
 * Tue Nov  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.8-1.fmi
 - New fmigrib
 * Thu Oct 20 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.20-1.fmi
