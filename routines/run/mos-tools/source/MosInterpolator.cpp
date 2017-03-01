@@ -37,7 +37,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 	assert(step >= 3);
 
 	// Special cases
-	
+
 	// Declination is not in database
 
 	if (pl.paramName == "DECLINATION-N")
@@ -212,7 +212,12 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 	{
 		paramName = "TD-C";
 	}
-	
+
+	else if (paramName == "TOTCW-KGM2")
+	{
+		paramName = "TCW-KGM2";
+	}
+		
 	// Meansea pressure is at level GROUND in neons (surface (station) pressure is PGR-PA)
 	
 	else if (paramName == "P-PA" && levelName == "MEANSEA")
@@ -451,7 +456,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 
 	if (dx != wantedGridResolution || dy != wantedGridResolution)
 	{
-		std::cout << "Interpolating " << pl << " to a grid with " << wantedGridResolution << " degrees separation" << std::endl;
+		std::cout << "Interpolating " << pl << " to " << wantedGridResolution << " degree grid" << std::endl;
 		
 		auto ret = InterpolateToGrid(info, wantedGridResolution);
 		
