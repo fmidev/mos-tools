@@ -10,8 +10,10 @@ WMO_ID = 0
 TARGET_PARAM_NAME = ""
 AHOUR = -1
 
+
 parameters = {
 	#"CSV_PARAMETER_NAME : DATABASE_PARAMETER_NAME/DATABASE_LEVEL_NAME/LEVEL_VALUE/TIME_STEP_ADJUSTMENT"
+	"DECLINATION" : "DECLINATION-N/NOLEVEL/0",
 	"Intercept" : "INTERCEPT-N/NOLEVEL/0",
 	"SD" : "SD-M/GROUND/0",
 	"MSL" : "P-PA/MEANSEA/0",
@@ -27,27 +29,38 @@ parameters = {
 	"CAPE" : "CAPE-JKG/GROUND/0",
 	"U10" : "U-MS/GROUND/0",
 	"V10" : "V-MS/GROUND/0",
-	"CP" : "CP/GROUND/0",
-	"LSP" : "LSP/GROUND/0",
+	"CP" : "RRC-KGM2/GROUND/0",
+	"LSP" : "RRL-KGM2/GROUND/0",
 	"SSHF" : "FLSEN-JM2/GROUND/0",
 	"STRD" : "RADLW-WM2/GROUND/0",
-#	"GH_950" : "Z-M2S2/PRESSURE/950",
+	"FG10_3" : "FFG3H-MS/GROUND/0",
+	"SKT" : "SKT-K/GROUND/0",
+	"MX2T3" : "MAXT2M-K/GROUND/0",
+	"MN2T3" : "MINT2M-K/GROUND/0",
+	"TCW" : "TOTCW-KGM2/GROUND/0",
+	"SLHF" : "FLLAT-JM2/GROUND/0",
+	"CBH" : "CLDBASE-M/GROUND/0",
+	"SSR" : "RNETSW-WM2/GROUND/0",
+	"BLH" : "MIXHGT-M/GROUND/0",
+	"DEG0" : "H0C-M/GROUND/0",
+	"GH_950" : "Z-M2S2/PRESSURE/950",
 	"GH_925" : "Z-M2S2/PRESSURE/925",
 	"GH_850" : "Z-M2S2/PRESSURE/850",
 	"GH_700" : "Z-M2S2/PRESSURE/700",
 	"GH_500" : "Z-M2S2/PRESSURE/500",
-#	"RH_950" : "RH-PRCNT/PRESSURE/950",
+	"RH_950" : "RH-PRCNT/PRESSURE/950",
 	"RH_925" : "RH-PRCNT/PRESSURE/925",
 	"RH_850" : "RH-PRCNT/PRESSURE/850",
 	"RH_700" : "RH-PRCNT/PRESSURE/700",
 	"RH_500" : "RH-PRCNT/PRESSURE/500",
-#	"T_950" : "T-K/PRESSURE/950",
+	"T_950_M1" : "T-K/PRESSURE/950/-1",
+	"T_950" : "T-K/PRESSURE/950",
 	"T_925_M1" : "T-K/PRESSURE/925/-1",
 	"T_925" : "T-K/PRESSURE/925",
 	"T_850" : "T-K/PRESSURE/850",
 	"T_700" : "T-K/PRESSURE/700",
 	"T_500" : "T-K/PRESSURE/500",
-#	"W_950" : "VV-PAS/PRESSURE/950",
+	"W_950" : "VV-PAS/PRESSURE/950",
 	"W_925" : "VV-PAS/PRESSURE/925",
 	"W_850" : "VV-PAS/PRESSURE/850",
 	"W_700" : "VV-PAS/PRESSURE/700",
@@ -109,7 +122,7 @@ def Read(infile):
 			elem = parameters[param]
 		except KeyError:
 			print "Unknown parameter %s" % (param)
-			continue
+			sys.exit(1)
 
 		for j, factor in enumerate(factors):
 
@@ -123,7 +136,13 @@ def Read(infile):
 
 def Load(values, mos_label, analysis_hour, wmo_id, target_param_name, season_id):
 
-	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", "", "vorlon.fmi.fi", "mos", 5432)
+	try:
+		password = os.environ["MOS_MOSRW_PASSWORD"]
+	except:
+		print "password should be given with env variable MOS_MOSRW_PASSWORD"
+		sys.exit(1)
+
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, "vorlon.fmi.fi", "mos", 5432)
 
 	conn = psycopg2.connect(dsn)
 	conn.autocommit = 1
@@ -193,10 +212,6 @@ def Load(values, mos_label, analysis_hour, wmo_id, target_param_name, season_id)
 	for forecast_period,weightlist in values.items():
 		count = count+1
 
-		if count % 20 == 0:
-			print "Insert row #%s" % (count)
-
-		
 		if set(weightlist.values()) == set(['0']):
 			# all weights were zero --> this step is not supported and it will not
 			# be inserted to database table
@@ -229,7 +244,8 @@ WHERE
 			else:
 				print e	
 				sys.exit(1)
-	
+	print "Inserted %s rows" % (count)
+
 	conn.commit()
 
 def main():
