@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        17.1.23
+Version:        17.3.7
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -51,6 +51,11 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Tue Mar  7 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.3.7-1.fmi
+- Preparing next mos version
+- Passwords to env variables
+* Mon Feb 13 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.2.13-1.fmi
+- New newbase
 * Mon Jan 23 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.1.23-1.fmi
 - Newbase RPM name change
 * Thu Dec  1 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.12.1-1.fmi
