@@ -56,7 +56,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 
 	// These are cumulative parameters 
 	bool isCumulativeParameter =
-		(pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M");
+		(pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M" || pl.paramName == "RRC-KGM2" || pl.paramName == "RRL-KGM2");
 
 	// These are cumulative radiation parameters 
 	bool isCumulativeRadiationParameter = 
@@ -87,7 +87,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 	{
 		scale = 1000000;
 	}
-	else if (pl.paramName == "SD-M" || pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M" )
+	else if (pl.paramName == "SD-M" || pl.paramName == "EVAP-KGM2" || pl.paramName == "RUNOFF-M" || pl.paramName == "SUBRUNOFF-M" || pl.paramName == "RRL-KGM2" || pl.paramName == "RRC-KGM2")
 	{
 		scale = 1000;
 	}
@@ -184,15 +184,16 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		levelName = "HEIGHT";
 	}
 */	
-	// Precipitation is also *not* cumulative from the forecast start,
-	// it is transformed to one hour precipitation
+
+	const int stepSize = (step < 144) ? 3 : 6;
 
 	if (paramName == "RR-KGM2")
 	{
 		producerId = 240;
 		levelName = "HEIGHT";
-		paramName = "RRR-KGM2";
+		paramName = "RR-" + std::to_string(stepSize) + "-MM";
 	}
+/*
 	else if (paramName == "RRC-KGM2")
 	{
 		producerId = 240;
@@ -205,7 +206,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		levelName = "HEIGHT";
 		paramName = "RRRL-KGM2";
 	}
-
+*/
 	// Erroneus metadata in neons
 	
 	else if (paramName == "TD-K")
