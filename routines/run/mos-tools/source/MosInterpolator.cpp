@@ -243,7 +243,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 			throw std::runtime_error("Previous timestep data requested for time step 0");
 		}
 
-		if (step < 144)
+		if (step <= 144)
 		{
 			step += 3 * pl.stepAdjustment;
 		}
