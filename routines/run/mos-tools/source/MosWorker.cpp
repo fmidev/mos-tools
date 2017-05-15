@@ -12,6 +12,15 @@
 
 boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
 
+std::string ToSQLInterval(int step)
+{
+	char ret[11];
+
+	snprintf(ret, 11, "%02d:00:00", step);
+
+	return std::string(ret);
+}
+
 std::string ToString(boost::posix_time::ptime p, const std::string& timeMask)
 {
 	assert(p != boost::date_time::not_a_date_time);
@@ -71,8 +80,11 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 	const int levelId = 1;
 	const double levelValue = 0;
 
-	outfile << "#producer_id,analysis_time,station_id,param_id,forecast_period,"
-	           "level_id,level_value,value"
+	outfile << "# "
+	           "producer_id,analysis_time,station_id,param_id,level_id,level_value,level_value2,forecast_period,"
+	           "forecast_type_id,forecast_type_value,value"
+	        //	outfile << "#producer_id,analysis_time,station_id,param_id,forecast_period,"
+	        //	           "level_id,level_value,value"
 	        << std::endl;
 
 #endif
@@ -108,8 +120,8 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 		std::cout << "Wrote file '" << fileName << "'" << std::endl;
 #else
 		outfile << mosInfo.producerId << "," << ToString(originTime, "%Y-%m-%d %H:%M:%S") << "," << station.wmoId << ","
-		        << paramId << "," << result.step << "," << levelId << "," << levelValue << "," << result.value
-		        << std::endl;
+		        << paramId << "," << levelId << "," << levelValue << ",-1," << ToSQLInterval(result.step) << ",1,-1,"
+		        << result.value << std::endl;
 #endif
 	}
 
