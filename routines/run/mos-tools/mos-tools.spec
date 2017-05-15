@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        17.4.6
+Version:        17.5.15
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon May 15 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.4.15-1.fmi
+- New CSV format
 * Thu Apr  6 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.4.6-1.fmi
 - New newbase, fmigrib
 * Thu Mar 16 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.3.16-1.fmi
