@@ -213,11 +213,6 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 
 	// Erroneus metadata in neons
 
-	else if (paramName == "TD-K")
-	{
-		paramName = "TD-C";
-	}
-
 	else if (paramName == "TOTCW-KGM2")
 	{
 		paramName = "TCW-KGM2";
