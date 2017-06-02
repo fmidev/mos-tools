@@ -52,7 +52,7 @@ void ParseCommandLine(int argc, char ** argv)
 	("end-step,e", po::value(&opts.endStep), "end step")
 	("step-length,l", po::value(&opts.stepLength), "step length")
 	("station-id,S", po::value(&opts.stationId), "station id, comma separated list")
-	("parameter,p", po::value(&opts.paramName), "parameter name (neons-style)")
+	("parameter,p", po::value(&opts.paramName), "parameter name (neons-style), comma separated list")
 	("trace", "write trace information to log and database (default false)")
 	;
 
@@ -132,13 +132,9 @@ int main(int argc, char ** argv)
 
 	ParseCommandLine(argc, argv);
 
-	step = opts.startStep - opts.stepLength;
-
 	std::unique_ptr<MosDB> m = std::unique_ptr<MosDB> (MosDBPool::Instance()->GetConnection());
 
 	MosInfo mosInfo = m->GetMosInfo(opts.mosLabel);
-
-	mosInfo.paramName = "T-K";
 
 	NFmiNeonsDB::Instance().Instance().Connect(1);
 
@@ -166,17 +162,29 @@ int main(int argc, char ** argv)
 #ifdef DEBUG
 	std::cout << "Analysis time: " << mosInfo.originTime << std::endl;
 #endif
-	
-	std::vector<std::thread> threadGroup;
 
 	NFmiNeonsDBPool::Instance()->MaxWorkers(opts.threadCount+1);
 
-	for (int i = 0; i < opts.threadCount; i++)
-	{
-		threadGroup.push_back(std::thread(Run, mosInfo, i)); 
-	}
+	std::vector<std::string> params;
+	boost::split(params, opts.paramName, boost::is_any_of(","));
 
-	std::for_each(threadGroup.begin(), threadGroup.end(), [](std::thread& t){ t.join(); });
+	for (const auto& param : params)
+	{
+		std::cout << "Starting calculation for " << param << std::endl;
+
+		step = opts.startStep - opts.stepLength;
+
+		mosInfo.paramName = param;
+
+		std::vector<std::thread> threadGroup;
+
+		for (int i = 0; i < opts.threadCount; i++)
+		{
+			threadGroup.push_back(std::thread(Run, mosInfo, i)); 
+		}
+
+		for (auto& t : threadGroup) { t.join(); }
+	}
 
 	MosDBPool::Instance()->Release(m.get());
 	m.release();

@@ -71,23 +71,45 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 		return;
 	}
 
-#ifndef LEGACY_MODE
 	std::ofstream outfile;
-	std::string fileName = "mos_" + boost::lexical_cast<std::string>(results.begin()->second.step) + ".txt";
+	std::stringstream fileName;
+	fileName << "mos_" 
+			<< mosInfo.paramName 
+			<< "_" 
+			<< std::setw(3) << std::setfill('0')
+			<< results.begin()->second.step
+			<< ".txt";
 
-	outfile.open(fileName);
-	const int paramId = 153;  // T-K
+	outfile.open(fileName.str());
+
+	int paramId;
+
+	// this could be replaced with a database lookup
+	if (mosInfo.paramName == "T-K")
+	{
+		paramId = 153;
+	}
+	else if (mosInfo.paramName == "TMAX12H-K")
+	{
+		paramId = 738;
+	}
+	else if (mosInfo.paramName == "TMIN12H-K")
+	{
+		paramId = 739;
+	}
+	else
+	{
+		throw std::runtime_error("Unable to find id for parameter: " + mosInfo.paramName);
+	}
+
 	const int levelId = 1;
 	const double levelValue = 0;
 
 	outfile << "# "
 	           "producer_id,analysis_time,station_id,param_id,level_id,level_value,level_value2,forecast_period,"
 	           "forecast_type_id,forecast_type_value,value"
-	        //	outfile << "#producer_id,analysis_time,station_id,param_id,forecast_period,"
-	        //	           "level_id,level_value,value"
 	        << std::endl;
 
-#endif
 	for (const auto& it : results)
 	{
 		const auto station = it.first;
@@ -95,34 +117,9 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 
 		boost::posix_time::ptime originTime = ToPtime(mosInfo.originTime, "%Y%m%d%H%M");
 
-#ifdef LEGACY_MODE
-
-		boost::posix_time::hours adjustment(result.step);
-		boost::posix_time::ptime leadTime = originTime + adjustment;
-
-		std::string fileName = "mos_" + boost::lexical_cast<std::string>(station.wmoId) + "_" +
-		                       boost::lexical_cast<std::string>(result.step) + ".txt";
-
-		std::ofstream outfile;
-		outfile.open(fileName);
-
-		outfile << "PreviVersion2" << std::endl;
-		outfile << "ECMOS" << std::endl;
-		outfile << "2140" << std::endl;
-		outfile << "1" << std::endl;
-		outfile << result.step << std::endl;
-		outfile << "-999" << std::endl;
-		outfile << station.wmoId << std::endl;
-		outfile << mosInfo.originTime << " " << nowstr << std::endl;
-		outfile << ToString(leadTime, "%Y%m%d%H%M") << " " << result.value << std::endl;
-
-		outfile.close();
-		std::cout << "Wrote file '" << fileName << "'" << std::endl;
-#else
 		outfile << mosInfo.producerId << "," << ToString(originTime, "%Y-%m-%d %H:%M:%S") << "," << station.wmoId << ","
 		        << paramId << "," << levelId << "," << levelValue << ",-1," << ToSQLInterval(result.step) << ",1,-1,"
 		        << result.value << std::endl;
-#endif
 	}
 
 	if (mosInfo.traceOutput)
@@ -131,18 +128,16 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 		itsMosDB->WriteTrace(mosInfo, results, nowstr);
 	}
 
-#ifndef LEGACY_MODE
 	outfile.close();
-	std::cout << "Wrote file '" << fileName << "'" << std::endl;
-#endif
+	std::cout << "Wrote file '" << fileName.str() << "'" << std::endl;
 }
 
 MosWorker::MosWorker() { itsMosDB = std::unique_ptr<MosDB>(MosDBPool::Instance()->GetConnection()); }
 MosWorker::~MosWorker()
 {
-	if (itsMosDB)
+	if (itsMosDB.get())
 	{
-		MosDBPool::Instance()->Release(itsMosDB.get());
+		MosDBPool::Instance()->Release(itsMosDB.release());
 	}
 }
 
