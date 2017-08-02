@@ -47,7 +47,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 
 	// Following parameters are not defined for step > 144
 
-	if (step > 144 && (pl.paramName == "FFG3H-MS" || pl.paramName == "MAXT2M-K" || pl.paramName == "MINT2M-K"))
+	if (step > 144 && (pl.paramName == "FFG3H-MS" || pl.paramName == "TMAX-K" || pl.paramName == "TMIN-K"))
 	{
 		return kFloatMissing;
 	}
