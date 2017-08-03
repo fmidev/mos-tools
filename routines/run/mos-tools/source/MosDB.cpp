@@ -31,9 +31,9 @@ std::string ToHstore(const std::vector<ParamLevel>& keys, const boost::numeric::
 	return str;
 }
 
-std::string GetPassword()
+std::string GetPassword(const std::string& username)
 {
-	const auto pw = getenv("MOS_MOSRW_PASSWORD");
+	const auto pw = getenv(username.c_str());
 
 	if (pw)
 	{
@@ -41,14 +41,14 @@ std::string GetPassword()
 	}
 	else
 	{
-		throw std::runtime_error("Password should be given with env variable MOS_MOSRW_PASSWORD");
+		throw std::runtime_error("Password should be given with env variable " + username);
 	}
 }
 
 MosDB::MosDB()
 {
 	user_ = "mos_rw";
-	password_ = GetPassword();
+	password_ = GetPassword("MOS_MOSRW_PASSWORD");
 	database_ = "mos";
 	hostname_ = "vorlon.fmi.fi";
 }
@@ -56,7 +56,7 @@ MosDB::MosDB()
 MosDB::MosDB(int theId) : NFmiPostgreSQL(theId)
 {
 	user_ = "mos_rw";
-	password_ = GetPassword();
+	password_ = GetPassword("MOS_MOSRW_PASSWORD");
 	database_ = "mos";
 	hostname_ = "vorlon.fmi.fi";
 }
@@ -70,11 +70,11 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step)
 
 	// get period information
 
-	std::string atime = mosInfo.originTime.substr(0, 8);
+	std::string atime = mosInfo.originTime.substr(0, 10);
 
 	int year = boost::lexical_cast<int>(mosInfo.originTime.substr(0, 4));
-	int month = boost::lexical_cast<int>(mosInfo.originTime.substr(4, 2));
-	int day = boost::lexical_cast<int>(mosInfo.originTime.substr(6, 2));
+	int month = boost::lexical_cast<int>(mosInfo.originTime.substr(5, 2));
+	int day = boost::lexical_cast<int>(mosInfo.originTime.substr(8, 2));
 
 	if (month == 2 && day == 29)
 	{
@@ -140,7 +140,7 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step)
 	      << "f.mos_version_id = v.id AND "
 	      << "pe.id = f.mos_period_id AND "
 	      << "extract(epoch FROM f.forecast_period)/3600 = " << step << " AND "
-	      << "analysis_hour = " << mosInfo.originTime.substr(8, 2) << " AND "
+	      << "analysis_hour = " << mosInfo.originTime.substr(11, 2) << " AND "
 	      << "pe.id = " << periodId << " "
 	      << "ORDER BY wmo_id, forecast_period, weight_keys";
 

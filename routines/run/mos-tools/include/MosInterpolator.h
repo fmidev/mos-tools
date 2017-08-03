@@ -4,7 +4,7 @@
 #include "Factor.h"
 #include "Result.h"
 #include <NFmiFastQueryInfo.h>
-#include "NFmiNeonsDB.h"
+#include "NFmiRadonDB.h"
 
 #include <map>
 
@@ -22,7 +22,7 @@ private:
 	std::vector<datas> GetData(const MosInfo& mosInfo, const ParamLevel& pl, int step);	
 
 	std::map<std::string, std::vector<datas>> itsDatas;
-	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
+	std::unique_ptr<NFmiRadonDB> itsRadonDB;
 
 };
 

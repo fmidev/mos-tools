@@ -73,12 +73,8 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 
 	std::ofstream outfile;
 	std::stringstream fileName;
-	fileName << "mos_" 
-			<< mosInfo.paramName 
-			<< "_" 
-			<< std::setw(3) << std::setfill('0')
-			<< results.begin()->second.step
-			<< ".txt";
+	fileName << "mos_" << mosInfo.paramName << "_" << std::setw(3) << std::setfill('0') << results.begin()->second.step
+	         << ".txt";
 
 	outfile.open(fileName.str());
 
@@ -115,7 +111,7 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 		const auto station = it.first;
 		const auto result = it.second;
 
-		boost::posix_time::ptime originTime = ToPtime(mosInfo.originTime, "%Y%m%d%H%M");
+		boost::posix_time::ptime originTime = ToPtime(mosInfo.originTime, "%Y-%m-%d %H:%M:00");
 
 		outfile << mosInfo.producerId << "," << ToString(originTime, "%Y-%m-%d %H:%M:%S") << "," << station.wmoId << ","
 		        << paramId << "," << levelId << "," << levelValue << ",-1," << ToSQLInterval(result.step) << ",1,-1,"

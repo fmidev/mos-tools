@@ -9,6 +9,7 @@
 #include <NFmiStreamQueryData.h>
 
 extern boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
+extern std::string GetPassword(const std::string& username);
 
 datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGridPointsInDegrees);
 datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName);
@@ -17,16 +18,26 @@ FmiInterpolationMethod InterpolationMethod(const std::string& paramName);
 
 const double PI = 3.14159265359;
 
+static std::once_flag oflag;
+
 MosInterpolator::MosInterpolator()
 {
-	itsNeonsDB = std::unique_ptr<NFmiNeonsDB>(NFmiNeonsDBPool::Instance()->GetConnection());
+	call_once(oflag, [&]()
+	          {
+		          NFmiRadonDBPool::Instance()->Username("radon_client");
+		          NFmiRadonDBPool::Instance()->Password(GetPassword("RADON_RADONCLIENT_PASSWORD"));
+		          NFmiRadonDBPool::Instance()->Database("radon");
+		          NFmiRadonDBPool::Instance()->Hostname("vorlon");
+		      });
+
+	itsRadonDB = std::unique_ptr<NFmiRadonDB>(NFmiRadonDBPool::Instance()->GetConnection());
 }
 
 MosInterpolator::~MosInterpolator()
 {
-	if (itsNeonsDB)
+	if (itsRadonDB)
 	{
-		NFmiNeonsDBPool::Instance()->Release(itsNeonsDB.get());
+		NFmiRadonDBPool::Instance()->Release(itsRadonDB.get());
 	}
 }
 
@@ -248,22 +259,23 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		}
 	}
 
-	auto prodInfo = itsNeonsDB->GetProducerDefinition(producerId);
+	auto prodInfo = itsRadonDB->GetProducerDefinition(producerId);
 
 	assert(prodInfo.size());
 
-	auto gridgeoms = itsNeonsDB->GetGridGeoms(prodInfo["ref_prod"], mosInfo.originTime);
+	auto gridgeoms = itsRadonDB->GetGridGeoms(prodInfo["ref_prod"], mosInfo.originTime);
 
 	assert(gridgeoms.size());
 
 	if (gridgeoms.size() > 1)
 	{
 		// order so that GLO is first
-		std::vector<std::vector<std::string>> newgeoms(1);
+		std::vector<std::vector<std::string>> newgeoms(gridgeoms.size());
 
+		int i = 0;
 		for (const auto& geom : gridgeoms)
 		{
-			std::string geomName = geom[0];
+			std::string geomName = geom[3];
 
 			if (geomName == "ECGLO0100")
 			{
@@ -271,9 +283,10 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 			}
 			else
 			{
-				newgeoms.push_back(geom);
+				newgeoms[++i] = geom;
 			}
 		}
+
 		gridgeoms = newgeoms;
 	}
 
@@ -281,26 +294,23 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 
 	for (const auto& geom : gridgeoms)
 	{
-		std::string tableName = geom[1];
+		const std::string tableName = geom[1];
 
 		std::stringstream query;
 
-		query << "SELECT parm_name, lvl_type, lvl1_lvl2, fcst_per, file_location "
-		         "FROM "
-		      << tableName << " "
-		                      "WHERE parm_name = upper('"
-		      << paramName << "') "
-		                      "AND lvl_type = upper('"
-		      << levelName << "') "
-		                      "AND lvl1_lvl2 = "
-		      << pl.levelValue << " "
-		                          "AND fcst_per = "
-		      << step << " "
-		                 "ORDER BY dset_id, fcst_per, lvl_type, lvl1_lvl2";
+		query
+		    << "SELECT param_name, level_name, level_value, extract(epoch from forecast_period) / 3600, file_location "
+		    << "FROM " << tableName << "_v "
+		    << "WHERE param_name = upper('" << paramName << "') "
+		    << "AND level_name = upper('" << levelName << "') "
+		    << "AND level_value = " << pl.levelValue << " "
+		    << "AND extract(epoch from forecast_period) / 3600 = " << step << " AND analysis_time = '"
+		    << mosInfo.originTime << "'"
+		    << " AND geometry_id = " << geom[0] << " ORDER BY 4,2,3";
 
-		itsNeonsDB->Query(query.str());
+		itsRadonDB->Query(query.str());
 
-		auto row = itsNeonsDB->FetchRow();
+		const auto row = itsRadonDB->FetchRow();
 
 		if (row.empty())
 		{
@@ -308,7 +318,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		}
 
 		ret.push_back(ToQueryInfo(pl, step, row[4]));
-		break;
+		break;  // stop on first grid found
 	}
 
 	if (ret.empty())
@@ -392,7 +402,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 		bl.Y(ly);
 		tr.Y(fy);
 
-		size_t halfSize = static_cast<size_t>(floor(nj / 2));
+		size_t halfSize = static_cast<size_t>(floor(static_cast<double>(nj) / 2));
 
 		for (size_t y = 0; y < halfSize; y++)
 		{
@@ -517,7 +527,7 @@ datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGri
 
 double Declination(int step, const std::string& originTime)
 {
-	auto orig = ToPtime(originTime, "%Y%m%d%H%M");
+	auto orig = ToPtime(originTime, "%Y-%m-%d %H:%M:00");
 	orig += boost::posix_time::seconds(3600 * step);
 
 	tm orig_tm = to_tm(orig);
