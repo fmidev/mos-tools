@@ -253,14 +253,14 @@ void MosDB::WriteTrace(const MosInfo& mosInfo, const Results& results, const std
 		         "target_param_id, target_level_id, target_level_value, weights, source_values, value, run_time) "
 		      << "SELECT " << mosInfo.id << "," << result.weights.periodId << ","
 		      << "NULL,"
-		      << "to_timestamp('" << mosInfo.originTime << "', 'yyyymmddhh24mi')," << station.id << ","
+		      << "to_timestamp('" << mosInfo.originTime << "', 'yyyy-mm-dd hh24:mi:ss')," << station.id << ","
 		      << result.weights.step << " * interval '1 hour',"
 		      << "p.id,"
 		      << "l.id,"
 		      << "0,"
 		      << "'" << ToHstore(result.weights.params, result.weights.weights) << "',"
 		      << "'" << ToHstore(result.weights.params, result.weights.values) << "'," << result.value << ","
-		      << "to_timestamp('" << run_time << "', 'yyyymmddhh24miss') "
+		      << "to_timestamp('" << run_time << "', 'yyyy-mm-dd hh24:mi:ss') "
 		      << " FROM param p, level l WHERE p.name = '" << mosInfo.paramName << "' AND l.name = 'GROUND'";
 
 		Execute(query.str());

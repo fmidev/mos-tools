@@ -61,7 +61,7 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 	// Current time
 
 	const boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-	std::string nowstr = ToString(now, "%Y%m%d%H%M%S");
+	std::string nowstr = ToString(now, "%Y-%m-%d %H:%M:%S");
 
 	// leadtime
 
