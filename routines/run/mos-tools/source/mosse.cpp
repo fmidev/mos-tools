@@ -21,6 +21,7 @@ struct Options
 
 	std::string mosLabel;
 	std::string paramName;
+	std::string analysisTime;
 
 	bool trace;
 
@@ -32,6 +33,7 @@ struct Options
 	      stationId(-1),
 	      mosLabel(""),
 	      paramName(""),
+	      analysisTime(""),
 	      trace(false)
 	{
 	}
@@ -45,14 +47,20 @@ void ParseCommandLine(int argc, char** argv)
 
 	po::options_description desc("Allowed options");
 
-	desc.add_options()("help,h", "print out help message")("mos-label,m", po::value<std::string>(&opts.mosLabel),
-	                                                       "mos label (required)")(
-	    "threads,j", po::value(&opts.threadCount), "number of started threads")(
-	    "start-step,s", po::value(&opts.startStep), "start step")("end-step,e", po::value(&opts.endStep), "end step")(
-	    "step-length,l", po::value(&opts.stepLength), "step length")("station-id,S", po::value(&opts.stationId),
-	                                                                 "station id, comma separated list")(
-	    "parameter,p", po::value(&opts.paramName), "parameter name (radon-style), comma separated list")(
-	    "trace", "write trace information to log and database (default false)");
+	// clang-format off
+	desc.add_options()
+		("help,h", "print out help message")
+		("mos-label,m", po::value<std::string>(&opts.mosLabel), "mos label (required)")
+		("threads,j", po::value(&opts.threadCount), "number of started threads")
+		("start-step,s", po::value(&opts.startStep), "start step")
+		("end-step,e", po::value(&opts.endStep), "end step")
+		("step-length,l", po::value(&opts.stepLength), "step length")
+		("station-id,S", po::value(&opts.stationId), "station id, comma separated list")
+		("parameter,p", po::value(&opts.paramName), "parameter name (radon-style), comma separated list")
+		("trace", "write trace information to log and database (default false)")
+		("analysis_time,a", po::value(&opts.analysisTime), "specify analysis time (SQL full timestamp, default=latest from database)")
+		;
+	// clang-format on
 
 	po::positional_options_description p;
 	p.add("auxiliary-files", -1);
@@ -135,25 +143,33 @@ int main(int argc, char** argv)
 
 	MosInfo mosInfo = m->GetMosInfo(opts.mosLabel);
 
-	NFmiRadonDB::Instance().Connect();
-
-	auto prodinfo = NFmiRadonDB::Instance().GetProducerDefinition(mosInfo.producerId);
-
-	if (prodinfo.empty())
+	if (opts.analysisTime.empty())
 	{
-		throw std::runtime_error("Unknown producer: " + boost::lexical_cast<std::string>(mosInfo.producerId));
+		NFmiRadonDB::Instance().Connect();
+
+		auto prodinfo = NFmiRadonDB::Instance().GetProducerDefinition(mosInfo.producerId);
+
+		if (prodinfo.empty())
+		{
+			throw std::runtime_error("Unknown producer: " + boost::lexical_cast<std::string>(mosInfo.producerId));
+		}
+
+		std::string ref_prod = prodinfo["ref_prod"];
+
+		const auto latest = NFmiRadonDB::Instance().GetLatestTime(ref_prod, "ECGLO0100", 0);
+
+		if (latest.empty())
+		{
+			throw std::runtime_error("Data not found from radon for ref_prod " + ref_prod);
+		}
+
+		mosInfo.originTime = latest;
+	}
+	else
+	{
+		mosInfo.originTime = opts.analysisTime;
 	}
 
-	std::string ref_prod = prodinfo["ref_prod"];
-
-	const auto latest = NFmiRadonDB::Instance().GetLatestTime(ref_prod, "ECGLO0100", 0);
-
-	if (latest.empty())
-	{
-		throw std::runtime_error("Data not found from radon for ref_prod " + ref_prod);
-	}
-
-	mosInfo.originTime = latest;
 	mosInfo.traceOutput = opts.trace;
 
 #ifdef DEBUG

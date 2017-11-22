@@ -93,6 +93,10 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 	{
 		paramId = 739;
 	}
+	else if (mosInfo.paramName == "TD-K")
+	{
+		paramId = 162;
+	}
 	else
 	{
 		throw std::runtime_error("Unable to find id for parameter: " + mosInfo.paramName);
