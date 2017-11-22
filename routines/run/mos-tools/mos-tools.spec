@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        17.10.25
+Version:        17.11.22
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Nov 22 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.11.22-1.fmi
+- Support TD-K as target parameter
 * Wed Oct 25 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.25-1.fmi
 - New fmigrib
 * Tue Aug 29 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.8.29-1.fmi
