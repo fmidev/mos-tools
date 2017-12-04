@@ -322,7 +322,7 @@ MosDB* MosDBPool::GetConnection()
 				itsWorkingList[i] = 1;
 
 #ifdef DEBUG
-				std::cout << "DEBUG: Idle worker returned with id " << itsWorkerList[i]->Id() << std::endl;
+				std::cout << "DEBUG: Idle mosdb worker returned with id " << itsWorkerList[i]->Id() << std::endl;
 #endif
 				return itsWorkerList[i];
 			}
@@ -335,7 +335,7 @@ MosDB* MosDBPool::GetConnection()
 				itsWorkingList[i] = 1;
 
 #ifdef DEBUG
-				std::cout << "DEBUG: New worker returned with id " << itsWorkerList[i]->Id() << std::endl;
+				std::cout << "DEBUG: New mosdb worker returned with id " << itsWorkerList[i]->Id() << std::endl;
 #endif
 				return itsWorkerList[i];
 			}
@@ -358,6 +358,6 @@ void MosDBPool::Release(MosDB* theWorker)
 	itsWorkingList[theWorker->Id()] = 0;
 
 #ifdef DEBUG
-	std::cout << "DEBUG: Worker released for id " << theWorker->Id() << std::endl;
+	std::cout << "DEBUG: mosdb worker released for id " << theWorker->Id() << std::endl;
 #endif
 }

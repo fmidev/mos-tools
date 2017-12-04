@@ -9,7 +9,9 @@
 #include "MosWorker.h"
 
 std::mutex mut;
-static int step = -1;
+static std::vector<std::string> params;
+static unsigned int paramIndex = 0;
+static int step;
 
 struct Options
 {
@@ -106,22 +108,45 @@ void ParseCommandLine(int argc, char** argv)
 	}
 }
 
-bool DistributeWork(int& curstep)
+bool DistributeWork(MosInfo& mosInfo, int& curstep)
 {
 	std::lock_guard<std::mutex> lock(mut);
 
-	step += opts.stepLength;
+	mosInfo.paramName = params[paramIndex];
 
 	if (step <= opts.endStep)
 	{
 		curstep = step;
+		step += opts.stepLength;
+		return true;
+	}
+
+	// proceed to next variable
+	paramIndex++;
+
+	if (paramIndex >= params.size())
+	{
+		return false;
+	}
+	else
+	{
+		// reset step and param
+		step = opts.startStep;
+		mosInfo.paramName = params[paramIndex];
+	}
+
+	if (step <= opts.endStep)
+	{
+		curstep = step;
+
+		step += opts.stepLength;
 		return true;
 	}
 
 	return false;
 }
 
-void Run(const MosInfo& mosInfo, int threadId)
+void Run(MosInfo mosInfo, int threadId)
 {
 	printf("Thread %d started\n", threadId);
 
@@ -129,10 +154,13 @@ void Run(const MosInfo& mosInfo, int threadId)
 
 	int curstep = -1;  // Will change at DistributeWork
 
-	while (DistributeWork(curstep))
+	while (DistributeWork(mosInfo, curstep))
 	{
+		printf("Thread %d processing param %s step %d\n", threadId, mosInfo.paramName.c_str(), curstep);
 		mosher.Mosh(mosInfo, curstep);
 	}
+
+	printf("Thread %d stopped\n", threadId);
 }
 
 int main(int argc, char** argv)
@@ -178,28 +206,20 @@ int main(int argc, char** argv)
 
 	NFmiRadonDBPool::Instance()->MaxWorkers(opts.threadCount + 1);
 
-	std::vector<std::string> params;
 	boost::split(params, opts.paramName, boost::is_any_of(","));
 
-	for (const auto& param : params)
+	step = opts.startStep;
+
+	std::vector<std::thread> threadGroup;
+
+	for (int i = 0; i < opts.threadCount; i++)
 	{
-		std::cout << "Starting calculation for " << param << std::endl;
+		threadGroup.push_back(std::thread(Run, mosInfo, i));
+	}
 
-		step = opts.startStep - opts.stepLength;
-
-		mosInfo.paramName = param;
-
-		std::vector<std::thread> threadGroup;
-
-		for (int i = 0; i < opts.threadCount; i++)
-		{
-			threadGroup.push_back(std::thread(Run, mosInfo, i));
-		}
-
-		for (auto& t : threadGroup)
-		{
-			t.join();
-		}
+	for (auto& t : threadGroup)
+	{
+		t.join();
 	}
 
 	MosDBPool::Instance()->Release(m.get());

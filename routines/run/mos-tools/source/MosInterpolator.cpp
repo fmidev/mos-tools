@@ -35,10 +35,14 @@ MosInterpolator::MosInterpolator()
 
 MosInterpolator::~MosInterpolator()
 {
+	// Return connection to pool
 	if (itsRadonDB)
 	{
 		NFmiRadonDBPool::Instance()->Release(itsRadonDB.get());
 	}
+
+	// release unique_ptr ownership without calling destructor
+	itsRadonDB.release();
 }
 
 double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
@@ -340,7 +344,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 		throw 1;
 	}
 
-	std::cout << "Reading file '" << fileName << "'" << std::endl;
+	std::cout << "Reading file '" << fileName << "' (" << pl << ")" << std::endl;
 	reader.NextMessage();
 
 	long dataDate = reader.Message().DataDate();
@@ -473,8 +477,9 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 
 	if (dx != wantedGridResolution || dy != wantedGridResolution)
 	{
+#ifdef DEBUG
 		std::cout << "Interpolating " << pl << " to " << wantedGridResolution << " degree grid" << std::endl;
-
+#endif
 		auto ret = InterpolateToGrid(info, wantedGridResolution);
 
 #ifdef EXTRADEBUG
