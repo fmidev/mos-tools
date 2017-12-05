@@ -10,7 +10,6 @@
 
 std::mutex mut;
 static std::vector<std::string> params;
-static unsigned int paramIndex = 0;
 static int step;
 
 struct Options
@@ -108,37 +107,13 @@ void ParseCommandLine(int argc, char** argv)
 	}
 }
 
-bool DistributeWork(MosInfo& mosInfo, int& curstep)
+bool DistributeWork(int& curstep)
 {
 	std::lock_guard<std::mutex> lock(mut);
 
-	mosInfo.paramName = params[paramIndex];
-
 	if (step <= opts.endStep)
 	{
 		curstep = step;
-		step += opts.stepLength;
-		return true;
-	}
-
-	// proceed to next variable
-	paramIndex++;
-
-	if (paramIndex >= params.size())
-	{
-		return false;
-	}
-	else
-	{
-		// reset step and param
-		step = opts.startStep;
-		mosInfo.paramName = params[paramIndex];
-	}
-
-	if (step <= opts.endStep)
-	{
-		curstep = step;
-
 		step += opts.stepLength;
 		return true;
 	}
@@ -154,10 +129,14 @@ void Run(MosInfo mosInfo, int threadId)
 
 	int curstep = -1;  // Will change at DistributeWork
 
-	while (DistributeWork(mosInfo, curstep))
+	while (DistributeWork(curstep))
 	{
-		printf("Thread %d processing param %s step %d\n", threadId, mosInfo.paramName.c_str(), curstep);
-		mosher.Mosh(mosInfo, curstep);
+		for (const auto& p : params)
+		{
+			mosInfo.paramName = p;
+			printf("Thread %d processing param %s step %d\n", threadId, mosInfo.paramName.c_str(), curstep);
+			mosher.Mosh(mosInfo, curstep);
+		}
 	}
 
 	printf("Thread %d stopped\n", threadId);
