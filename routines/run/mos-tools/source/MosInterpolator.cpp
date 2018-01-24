@@ -241,6 +241,21 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		levelName = "GROUND";
 	}
 
+	else if (paramName == "NL-PRCNT")
+	{
+		paramName = "NL-0TO1";
+	}
+
+	else if (paramName == "NM-PRCNT")
+	{
+		paramName = "NM-0TO1";
+	}
+
+	else if (paramName == "NH-PRCNT")
+	{
+		paramName = "NH-0TO1";
+	}
+
 	if (pl.stepAdjustment < 0)
 	{
 #ifdef DEBUG

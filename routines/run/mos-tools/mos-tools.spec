@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        17.12.4
+Version:        18.1.24
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -19,7 +19,7 @@ BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  smartmet-library-newbase-devel
 Requires:	libfmidb >= 17.4.6
-Requires:	libfmigrib >= 17.4.6
+Requires:	libfmigrib >= 18.1.24
 Requires:       jasper-libs
 Requires:       libpqxx
 Requires:	eccodes
@@ -51,6 +51,10 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Jan 24 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.24-1.fmi
+- fmigrib api change
+* Mon Dec  5 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.12.5-1.fmi
+- Adjustment for job distribution
 * Mon Dec  4 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.12.4-1.fmi
 - Improved job distribution for threads
 * Wed Nov 22 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.11.22-1.fmi
