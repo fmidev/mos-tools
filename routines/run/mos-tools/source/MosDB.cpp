@@ -51,6 +51,15 @@ MosDB::MosDB()
 	password_ = GetPassword("MOS_MOSRW_PASSWORD");
 	database_ = "mos";
 	hostname_ = "vorlon.fmi.fi";
+
+	const char* host = getenv("MOS_HOSTNAME");
+
+	if (host)
+	{
+		hostname_ = std::string(host);
+	}
+
+	std::cout << "MosDB details: " << user_ << "/xxx@" << hostname_ << std::endl;
 }
 
 MosDB::MosDB(int theId) : NFmiPostgreSQL(theId)
@@ -59,6 +68,15 @@ MosDB::MosDB(int theId) : NFmiPostgreSQL(theId)
 	password_ = GetPassword("MOS_MOSRW_PASSWORD");
 	database_ = "mos";
 	hostname_ = "vorlon.fmi.fi";
+
+	const char* host = getenv("MOS_HOSTNAME");
+
+	if (host)
+	{
+		hostname_ = std::string(host);
+	}
+
+	std::cout << "MosDB details: " << user_ << "/xxx@" << hostname_ << std::endl;
 }
 
 MosDB::~MosDB() { Disconnect(); }
