@@ -142,7 +142,7 @@ def Load(values, mos_label, analysis_hour, wmo_id, target_param_name, season_id)
 		print "password should be given with env variable MOS_MOSRW_PASSWORD"
 		sys.exit(1)
 
-	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, "vorlon.fmi.fi", "mos", 5432)
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, os.environ["MOS_HOSTNAME"], "mos", 5432)
 
 	conn = psycopg2.connect(dsn)
 	conn.autocommit = 1

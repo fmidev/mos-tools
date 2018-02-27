@@ -72,7 +72,7 @@ def LoadToDatabase(cur, tablename, buff, colbuff):
 def Load(infile_name):
 	infile = open (infile_name)
 
-	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw",  os.environ["MOS_MOSRW_PASSWORD"], "vorlon.fmi.fi", "mos", 5432)
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw",  os.environ["MOS_MOSRW_PASSWORD"], os.environ["MOS_HOSTNAME"], "mos", 5432)
 
 	conn = psycopg2.connect(dsn)
 
