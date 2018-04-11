@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        18.2.20
+Version:        18.4.11
 Release:        1.el7.fmi
 Summary:        Tools for mos
 Group:          Applications/System
@@ -13,7 +13,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmidb-devel
 BuildRequires:  eccodes-devel
-BuildRequires:  boost-devel >= 1.65
+BuildRequires:  boost-devel >= 1.66
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
@@ -51,6 +51,10 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Apr 11 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.4.11-1.fmi
+- New boost
+* Tue Feb 27 2018 Elmeri Nurmi <elmeri.nurmi@fmi.fi> - 18.2.27-1.fmi
+- Check DB hostname from env variable
 * Tue Feb 20 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.2.20-1.fmi
 - fmigrib api change
 * Wed Jan 24 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.24-1.fmi
