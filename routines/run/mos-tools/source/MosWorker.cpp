@@ -229,8 +229,6 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 
 	// 4. Write to file
 
-	std::cout << "Writing results" << std::endl;
-
 	Write(mosInfo, results);
 
 	return true;
