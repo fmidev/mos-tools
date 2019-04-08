@@ -47,7 +47,7 @@ MosInterpolator::~MosInterpolator()
 
 double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station, const ParamLevel& pl, int step)
 {
-	auto key = Key(pl, step);
+	auto key = Key(pl, step, mosInfo.originTime);
 
 	assert(step >= 3);
 
@@ -89,11 +89,11 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 		// Intentionally not catching exceptions here: if error
 		// occurs, program execution should stop
 
-		itsDatas[Key(pl, step)] = GetData(mosInfo, pl, step);
+		itsDatas[Key(pl, step, mosInfo.originTime)] = GetData(mosInfo, pl, step);
 
 		if ((isCumulativeParameter || isCumulativeRadiationParameter) && prevStep > 0)
 		{
-			itsDatas[Key(pl, prevStep)] = GetData(mosInfo, pl, prevStep);
+			itsDatas[Key(pl, prevStep, mosInfo.originTime)] = GetData(mosInfo, pl, prevStep);
 		}
 	}
 
@@ -133,7 +133,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 			}
 			else
 			{
-				for (datas& d2 : itsDatas[Key(pl, prevStep)])
+				for (datas& d2 : itsDatas[Key(pl, prevStep, mosInfo.originTime)])
 				{
 					prevValue = d2.second.InterpolatedValue(latlon);
 					if (prevValue == kFloatMissing)
@@ -278,35 +278,49 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		}
 	}
 
+	auto realOrigin = mosInfo.originTime;
+
+	if (pl.originTimeAdjustment == -1)
+	{
+#ifdef DEBUG
+		std::cout << "Param " << pl.paramName << "/" << pl.levelName << "/" << pl.levelValue << " at step " << step
+		          << " has origintime adjustment " << pl.originTimeAdjustment << std::endl;
+#endif
+		using namespace boost::posix_time;
+
+		ptime time(time_from_string(mosInfo.originTime));
+		time = time - hours(12);
+
+		realOrigin = to_simple_string(time);
+
+		step += 12;
+	}
+
 	auto prodInfo = itsRadonDB->GetProducerDefinition(producerId);
 
 	assert(prodInfo.size());
 
-	auto gridgeoms = itsRadonDB->GetGridGeoms(prodInfo["ref_prod"], mosInfo.originTime);
+	auto gridgeoms = itsRadonDB->GetGridGeoms(prodInfo["ref_prod"], realOrigin);
 
 	assert(gridgeoms.size());
 
 	if (gridgeoms.size() > 1)
 	{
-		// order so that GLO is first
-		std::vector<std::vector<std::string>> newgeoms(gridgeoms.size());
-
-		int i = 0;
-		for (const auto& geom : gridgeoms)
-		{
-			std::string geomName = geom[3];
-
-			if (geomName == "ECGLO0100")
-			{
-				newgeoms[0] = geom;
-			}
-			else
-			{
-				newgeoms[++i] = geom;
-			}
-		}
-
-		gridgeoms = newgeoms;
+		// order so that GLO is first, EUR second
+		std::sort(gridgeoms.begin(), gridgeoms.end(),
+		          [](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs)
+		          {
+			          if (lhs[3].find("ECGLO") != std::string::npos && rhs[3].find("ECGLO") == std::string::npos)
+			          {
+				          return true;
+			          }
+			          if (lhs[3].find("ECEUR") != std::string::npos &&
+			              (rhs[3].find("ECGLO") == std::string::npos && rhs[3].find("ECEUR") == std::string::npos))
+			          {
+				          return true;
+			          }
+			          return false;
+			      });
 	}
 
 	std::vector<datas> ret;
@@ -323,8 +337,8 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		    << "WHERE param_name = upper('" << paramName << "') "
 		    << "AND level_name = upper('" << levelName << "') "
 		    << "AND level_value = " << pl.levelValue << " "
-		    << "AND extract(epoch from forecast_period) / 3600 = " << step << " AND analysis_time = '"
-		    << mosInfo.originTime << "'"
+		    << "AND extract(epoch from forecast_period) / 3600 = " << step << " AND analysis_time = '" << realOrigin
+		    << "'"
 		    << " AND geometry_id = " << geom[0] << " ORDER BY 4,2,3";
 
 		itsRadonDB->Query(query.str());
@@ -343,7 +357,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 	if (ret.empty())
 	{
 		throw std::runtime_error("No data found for " + boost::lexical_cast<std::string>(producerId) + "/" +
-		                         Key(pl, step));
+		                         Key(pl, step, mosInfo.originTime));
 	}
 
 	return ret;
@@ -479,7 +493,9 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 
 	if (wantedGridResolution < dx)
 	{
-		throw std::runtime_error("Will not interpolate to a finer grid than the source data");
+		std::cout << "Will not interpolate to a finer grid (" << wantedGridResolution << ") than the source data ("
+		          << dx << ")" << std::endl;
+		return std::make_pair(data, info);
 	}
 
 #ifdef EXTRADEBUG
@@ -539,7 +555,6 @@ datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGri
 	for (info.ResetLocation(); info.NextLocation();)
 	{
 		info.FloatValue(sourceInfo.InterpolatedValue(info.LatLon()));
-		assert(info.FloatValue() != kFloatMissing);
 	}
 
 	return std::make_pair(data, info);

@@ -5,14 +5,15 @@ import os
 import psycopg2
 import psycopg2.extras
 import argparse
-
-WMO_ID = 0
-TARGET_PARAM_NAME = ""
-AHOUR = -1
-
+import fnmatch
 
 parameters = {
 	#"CSV_PARAMETER_NAME : DATABASE_PARAMETER_NAME/DATABASE_LEVEL_NAME/LEVEL_VALUE/TIME_STEP_ADJUSTMENT"
+	"T2_ENSMEAN_MA1" : "T-MEAN-K/GROUND/0/0/-1",
+	"TA" : "T-K/GROUND/0",
+	"TAMAX12H" : "TMAX12H-K/GROUND/0",
+	"TAMIN12H" : "TMIN12H-K/GROUND/0",
+	"TD" : "TD-K/GROUND/0",
 	"DECLINATION" : "DECLINATION-N/NOLEVEL/0",
 	"Intercept" : "INTERCEPT-N/NOLEVEL/0",
 	"SD" : "SD-M/GROUND/0",
@@ -53,8 +54,8 @@ parameters = {
 	"RH_850" : "RH-PRCNT/PRESSURE/850",
 	"RH_700" : "RH-PRCNT/PRESSURE/700",
 	"RH_500" : "RH-PRCNT/PRESSURE/500",
-	"T_950_M1" : "T-K/PRESSURE/950/-1",
 	"T_950" : "T-K/PRESSURE/950",
+	"T_950_M1" : "T-K/PRESSURE/950/-1",
 	"T_925_M1" : "T-K/PRESSURE/925/-1",
 	"T_925" : "T-K/PRESSURE/925",
 	"T_850" : "T-K/PRESSURE/850",
@@ -134,24 +135,10 @@ def Read(infile):
 
 	return ret
 
-def Load(values, mos_label, analysis_hour, wmo_id, target_param_name, season_id):
+def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, season_id):
 
-	try:
-		password = os.environ["MOS_MOSRW_PASSWORD"]
-	except:
-		print "password should be given with env variable MOS_MOSRW_PASSWORD"
-		sys.exit(1)
-
-	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, os.environ["MOS_HOSTNAME"], "mos", 5432)
-
-	conn = psycopg2.connect(dsn)
-	conn.autocommit = 1
 
 	dbparam = parameters[target_param_name].split('/')[0]
-
-	psycopg2.extras.register_hstore(conn)
-
-	cur = conn.cursor()
 
 	sql = "SELECT id FROM param WHERE name = %s"
 
@@ -189,24 +176,6 @@ def Load(values, mos_label, analysis_hour, wmo_id, target_param_name, season_id)
 
 	station_id = int(row[0])
 
-	sql = "SELECT id,name FROM level"
-
-	cur.execute(sql)
-
-	levels = {}
-
-	for row in cur.fetchall():
-		levels[row[1]] = row[0]
-
-	sql = "SELECT id,name FROM param"
-
-	cur.execute(sql)
-
-	params = {}
-
-	for row in cur.fetchall():
-		params[row[1]] = row[0]
-
 	count = 0
 
 	for forecast_period,weightlist in values.items():
@@ -216,13 +185,20 @@ def Load(values, mos_label, analysis_hour, wmo_id, target_param_name, season_id)
 			# all weights were zero --> this step is not supported and it will not
 			# be inserted to database table
 			continue
-			
+
+		str = '"'
+		for k,v in weightlist.items():
+			str += k + " => " + v + ","
+
+		str = str[:-1] + '"'
+	
 		sql ="""
 INSERT INTO 
   mos_weight (mos_version_id, mos_period_id, analysis_hour, station_id, forecast_period, target_param_id, target_level_id, target_level_value, weights)
 VALUES(%s, %s, %s, %s, %s * interval '1 hour', %s, 1, 0, %s)
 """
-
+		#print "%s,%s,%s,%s,%s,%s,1,0,%s" % (mos_version_id, season_id, analysis_hour, station_id, forecast_period, target_param_id, str)
+		
 		try:
 			cur.execute(sql, [mos_version_id, season_id, analysis_hour, station_id, forecast_period, target_param_id, weightlist])
 		except psycopg2.IntegrityError,e:
@@ -246,49 +222,73 @@ WHERE
 				sys.exit(1)
 	print "Inserted %s rows" % (count)
 
-	conn.commit()
+def meta_from_name(filename,opts):
+	# Filename example:
+	# station_8579_12_season1_TA_lm_MOS_constant_maxvars14.csv
+	sys.stderr.write(filename + "\n")
+	nameInfo = filename.split('_')
+	ret = {}
+
+	if opts.wmo is not None:
+		ret['wmo_id'] = opts.wmo
+	else:
+		ret['wmo_id'] = nameInfo[1]
+
+	if opts.analysis_hour is not None:
+		ret['ahour'] = opts.analysis_hour
+	else:
+		ret['ahour'] = nameInfo[2]
+
+	if opts.param is not None:
+		ret['target_param_name'] = opts.param
+	else:
+		ret['target_param_name'] = nameInfo[4]
+
+	if opts.season is not None:
+		ret['season_id'] = opts.param
+	else:
+		ret['season_id'] = nameInfo[3][-1]
+
+	return ret
 
 def main():
 
 	opts = ParseCommandLine(sys.argv)
 
-	global WMO_ID
-	global TARGET_PARAM_NAME
-	global AHOUR
+	try:
+		password = os.environ["MOS_MOSRW_PASSWORD"]
+	except:
+		print "password should be given with env variable MOS_MOSRW_PASSWORD"
+		sys.exit(1)
 
-	# Filename example:
-	# station_8579_12_season1_TA_lm_MOS_constant_maxvars14.csv
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, os.environ["MOS_HOSTNAME"], "mos", 5432)
 
-	nameInfo = os.path.basename(opts.file[0]).split('_')
+	conn = psycopg2.connect(dsn)
+	conn.autocommit = 1
 
-	wmo_id = None
-	ahour = None
-	target_param_name = None
-	season_id = None
+	psycopg2.extras.register_hstore(conn)
 
-	if opts.wmo is not None:
-		wmo_id = opts.wmo
+	cur = conn.cursor()
+	
+	count = 0
+	if os.path.isdir(opts.file[0]):
+		matches = []
+		for root, dirnames, filenames in os.walk(opts.file[0]):
+			for filename in fnmatch.filter(filenames, 'station*.csv'):
+				matches.append(os.path.join(root, filename))
+                for file in matches:
+                    count = count+1
+                    nameInfo = meta_from_name(os.path.basename(file), opts)
+
+                    values = Read(file)
+                    Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['wmo_id'], nameInfo['target_param_name'], nameInfo['season_id'])
 	else:
-		wmo_id = nameInfo[1]
+		nameInfo = meta_from_name(os.path.basename(opts.file[0]), opts)
 
-	if opts.analysis_hour is not None:
-		ahour = opts.analysis_hour
-	else:
-		ahour = nameInfo[2]
+		values = Read(opts.file[0])
+		Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['wmo_id'], nameInfo['target_param_name'], nameInfo['season_id'])
 
-	if opts.param is not None:
-		target_param_name = opts.param
-	else:
-		target_param_name = nameInfo[4]
-
-	if opts.season is not None:
-		season_id = opts.param
-	else:
-		season_id = nameInfo[3][-1]
-
-	values = Read(opts.file[0])
-
-	Load(values, opts.mos_label, ahour, wmo_id, target_param_name, season_id)
+	conn.commit()
 
 if __name__ == "__main__":
 	main()

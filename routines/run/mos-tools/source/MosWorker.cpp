@@ -192,13 +192,13 @@ bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 				{
 					it.second.values[i] = 20000;  // Number comes from J. Ylhaisi
 					std::cout << "Missing value for station " << station.id << " " << station.name << " "
-					          << Key(pl, step) << ", setting value to 20000" << std::endl;
+					          << Key(pl, step, mosInfo.originTime) << ", setting value to 20000" << std::endl;
 				}
 				else
 				{
 					it.second.weights[i] = 0;
 					std::cout << "Missing value for station " << station.id << " " << station.name << " "
-					          << Key(pl, step) << ", setting weight to zero" << std::endl;
+					          << Key(pl, step, mosInfo.originTime) << ", setting weight to zero" << std::endl;
 				}
 			}
 			else
