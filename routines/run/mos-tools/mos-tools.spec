@@ -2,9 +2,9 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        18.4.11
+Version:        19.4.9
 Release:        1.el7.fmi
-Summary:        Tools for mos
+Summary:        Tools for FMI mos
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Tue Apr  9 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.9-1.fmi
+- Support fetching data from previous forecast
 * Wed Apr 11 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.4.11-1.fmi
 - New boost
 * Tue Feb 27 2018 Elmeri Nurmi <elmeri.nurmi@fmi.fi> - 18.2.27-1.fmi
