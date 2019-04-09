@@ -13,30 +13,25 @@ struct ParamLevel
 	double levelValue;
 	int stepAdjustment;
 	int originTimeAdjustment;
-	
-	ParamLevel() 
-		: paramName("TEST")
-		, levelName("TEST")
-		, levelValue(32700.)
-		, stepAdjustment(0)
-	        , originTimeAdjustment(0)
-	{};
-	
+
+	ParamLevel()
+	    : paramName("TEST"), levelName("TEST"), levelValue(32700.), stepAdjustment(0), originTimeAdjustment(0){};
+
 	ParamLevel(const std::string& str)
 	{
 		std::vector<std::string> split;
 		boost::split(split, str, boost::is_any_of("/"));
-		
+
 		paramName = split[0];
 		levelName = split[1];
 		levelValue = std::stod(split[2]);
 		stepAdjustment = 0;
 		originTimeAdjustment = 0;
-		
+
 		if (split.size() >= 4 && split[3].size() > 0)
 		{
 			stepAdjustment = std::stoi(split[3]);
-			
+
 			if (stepAdjustment > 0)
 			{
 				throw std::runtime_error("No support for next time step data");
@@ -52,16 +47,12 @@ struct ParamLevel
 			}
 		}
 	}
-	
 };
 
-inline
-std::ostream& operator<<(std::ostream& file, const ParamLevel& ob)
+inline std::ostream& operator<<(std::ostream& file, const ParamLevel& ob)
 {
-	file << ob.paramName << "/" << ob.levelName << "/" << ob.levelValue;
-
-	if (ob.stepAdjustment != 0) file << "/" << ob.stepAdjustment;
-	if (ob.originTimeAdjustment != 0) file << "/" << ob.originTimeAdjustment;
+	file << ob.paramName << "/" << ob.levelName << "/" << ob.levelValue << "/" << ob.stepAdjustment << "/"
+	     << ob.originTimeAdjustment;
 
 	return file;
 }
@@ -71,14 +62,13 @@ struct Weight
 	std::vector<ParamLevel> params;
 	boost::numeric::ublas::vector<double> weights;
 	boost::numeric::ublas::vector<double> values;
-	
-	int periodId;	
+
+	int periodId;
 	int step;
 
 	std::string startDate;
 	std::string stopDate;
 	std::string mosLabel;
-	
 };
 
 struct Station
@@ -86,19 +76,17 @@ struct Station
 	int id;
 	int wmoId;
 	std::string name;
-	
+
 	double latitude;
 	double longitude;
 
 	bool operator==(const Station& other) const { return wmoId == other.wmoId; }
 	bool operator<(const Station& other) const { return wmoId < other.wmoId; }
-
 };
 
 typedef std::map<Station, Weight> Weights;
 
-inline
-std::string Key(const ParamLevel& pl, int step, const std::string& originTime) 
+inline std::string Key(const ParamLevel& pl, int step, const std::string& originTime)
 {
 	using namespace boost::posix_time;
 
@@ -110,17 +98,10 @@ std::string Key(const ParamLevel& pl, int step, const std::string& originTime)
 	{
 		ptime time(time_from_string(originTime));
 		time = time - hours(12);
-	
+
 		realOrigin = to_simple_string(time);
 	}
-	
-	return pl.paramName
-			+ "/"
-			+ pl.levelName
-			+ "/"
-			+ std::to_string (pl.levelValue)
-			+ "@" 
-			+ std::to_string (step)
-			+ " from "
-			+ realOrigin; 
+
+	return pl.paramName + "/" + pl.levelName + "/" + std::to_string(pl.levelValue) + "@" + std::to_string(step) +
+	       " from " + realOrigin;
 }
