@@ -296,6 +296,15 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		step += 12;
 	}
 
+
+	// Fetching T-MEAN-K from previous forecast does not work for leadtime 141:
+	// leadtime 153 does not exist! In this case use data from leadtime 150.
+
+	if (paramName == "T-MEAN-K" && pl.originTimeAdjustment == -1 && step == 153)
+	{
+		step = 150;
+	}
+
 	auto prodInfo = itsRadonDB->GetProducerDefinition(producerId);
 
 	assert(prodInfo.size());
