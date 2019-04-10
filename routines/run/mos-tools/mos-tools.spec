@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        19.4.9
+Version:        19.4.10
 Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Apr 10 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.10-1.fmi
+- Fix for T-MEAN-K leadtime 147/153
 * Tue Apr  9 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.9-1.fmi
 - Support fetching data from previous forecast
 * Wed Apr 11 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.4.11-1.fmi
