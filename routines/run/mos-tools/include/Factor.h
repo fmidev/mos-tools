@@ -6,6 +6,20 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+inline
+std::string ToSQLTime(const boost::posix_time::ptime& ts)
+{
+        const auto& date = ts.date();
+        const auto& time = ts.time_of_day();
+
+        char fmt[20];
+        snprintf(fmt, 20, "%04d-%02d-%02d %02d:%02d:%02d", static_cast<int>(date.year()), static_cast<int>(date.month()),
+                 static_cast<int>(date.day()), static_cast<int>(time.hours()), static_cast<int>(time.minutes()),
+                 static_cast<int>(time.seconds()));
+
+        return std::string(fmt);
+}
+
 struct ParamLevel
 {
 	std::string paramName;
@@ -99,7 +113,7 @@ inline std::string Key(const ParamLevel& pl, int step, const std::string& origin
 		ptime time(time_from_string(originTime));
 		time = time - hours(12);
 
-		realOrigin = to_simple_string(time);
+		realOrigin = ToSQLTime(time);
 	}
 
 	return pl.paramName + "/" + pl.levelName + "/" + std::to_string(pl.levelValue) + "@" + std::to_string(step) +

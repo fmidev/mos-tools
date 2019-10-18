@@ -12,7 +12,7 @@ extern boost::posix_time::ptime ToPtime(const std::string& time, const std::stri
 extern std::string GetPassword(const std::string& username);
 
 datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGridPointsInDegrees);
-datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName);
+datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset, const std::string& length);
 double Declination(int step, const std::string& originTime);
 FmiInterpolationMethod InterpolationMethod(const std::string& paramName);
 
@@ -291,7 +291,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		ptime time(time_from_string(mosInfo.originTime));
 		time = time - hours(12);
 
-		realOrigin = to_simple_string(time);
+		realOrigin = ToSQLTime(time);
 
 		step += 12;
 	}
@@ -341,7 +341,8 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		std::stringstream query;
 
 		query
-		    << "SELECT param_name, level_name, level_value, extract(epoch from forecast_period) / 3600, file_location "
+		    << "SELECT param_name, level_name, level_value, extract(epoch from forecast_period) / 3600, "
+		    << "file_location, byte_offset, byte_length "
 		    << "FROM " << tableName << "_v "
 		    << "WHERE param_name = upper('" << paramName << "') "
 		    << "AND level_name = upper('" << levelName << "') "
@@ -359,7 +360,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 			continue;
 		}
 
-		ret.push_back(ToQueryInfo(pl, step, row[4]));
+		ret.push_back(ToQueryInfo(pl, step, row[4], row[5], row[6]));
 		break;  // stop on first grid found
 	}
 
@@ -372,7 +373,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 	return ret;
 }
 
-datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
+datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset, const std::string& length)
 {
 	NFmiGrib reader;
 
@@ -382,8 +383,16 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName)
 		throw 1;
 	}
 
-	std::cout << "Reading file '" << fileName << "' (" << pl << ")" << std::endl;
-	reader.NextMessage();
+	if (offset.empty() && length.empty())
+	{
+		std::cout << "Reading file '" << fileName << "' (" << pl << ")" << std::endl;
+		reader.NextMessage();
+	}
+	else
+	{
+		std::cout << "Reading file '" << fileName << "' " << offset << ":" << length << " (" << pl << ")" << std::endl;
+		reader.ReadMessage(std::stoi(offset), std::stoi(length));
+	}
 
 	long dataDate = reader.Message().DataDate();
 	long dataTime = reader.Message().DataTime();
