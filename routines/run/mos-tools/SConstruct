@@ -39,11 +39,6 @@ if os.environ.get('INCLUDE') != None:
 includes.append('include')
 includes.append('/usr/include/smartmet/newbase')
 
-if os.environ.get('ORACLE_HOME') is None:
-        includes.append('/usr/include/oracle')
-else:
-        includes.append(os.environ.get('ORACLE_HOME') + '/rdbms/public')
-
 env.Append(CPPPATH = includes)
 
 # Library paths
