@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.7
+Version:        19.10.23
 Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Oct 23 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.23-1.fmi
+- Support byte_offset&byte_length
 * Mon Oct  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.7-1.fmi
 - fmigrib ABI change
 * Wed Apr 10 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.10-1.fmi
