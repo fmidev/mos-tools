@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.23
+Version:        20.4.6
 Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -18,7 +18,7 @@ BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  smartmet-library-newbase-devel
-Requires:	libfmidb >= 17.4.6
+Requires:	libfmidb >= 20.4.6
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
 Requires:       libpqxx
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi
+- fmidb ABI change
 * Wed Oct 23 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.23-1.fmi
 - Support byte_offset&byte_length
 * Mon Oct  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.7-1.fmi
