@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        20.4.6
+Version:        20.4.20
 Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -13,7 +13,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmidb-devel
 BuildRequires:  eccodes-devel
-BuildRequires:  boost-devel >= 1.66
+BuildRequires:  boost169-devel
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Apr 20 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.20-1.fmi
+- boost 1.69
 * Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi
 - fmidb ABI change
 * Wed Oct 23 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.23-1.fmi
