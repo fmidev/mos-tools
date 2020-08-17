@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        20.7.8
+Version:        20.8.17
 Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -11,14 +11,14 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
-BuildRequires:  libfmidb-devel >= 20.7.8
+BuildRequires:  libfmidb-devel >= 20.8.17
 BuildRequires:  eccodes-devel
 BuildRequires:  boost169-devel
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  smartmet-library-newbase-devel
-Requires:	libfmidb >= 20.7.8
+Requires:	libfmidb >= 20.8.17
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
 Requires:       libpqxx
@@ -51,6 +51,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Aug 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.17-1.fmi
+- New fmidb
 * Wed Jul  8 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.8-1.fmi
 - New fmidb
 * Mon Apr 20 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.20-1.fmi
