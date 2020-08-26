@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
 import psycopg2
 import argparse
 import math
-import StringIO
+import io
 
 PARTITIONS = []
 
@@ -36,17 +36,17 @@ def LoadToDatabase(cur, tablename, buff, colbuff):
 	try:
 		cur.execute("SAVEPOINT insert")
 
-		f = StringIO.StringIO("\n".join(buff))
+		f = io.StringIO("\n".join(buff))
 
 		cur.copy_from(f, tablename, columns=['station_id', 'analysis_time', 'forecast_period', 'parameter_id', 'level_id', 'level_value', 'value'])
 
 		ret = len(buff)
 		cur.execute("RELEASE SAVEPOINT insert")
 
-	except psycopg2.IntegrityError,e:
+	except psycopg2.IntegrityError as e:
 		if e.pgcode == "23505":
 			
-			print "COPY failed, switch to INSERT"
+			print("COPY failed, switch to INSERT")
 	#		print cur.mogrify(sql, (station_id, analysis_time, period, param_id, level_id, level_value, arr[6]))
 			cur.execute("ROLLBACK TO SAVEPOINT insert")
 
@@ -58,14 +58,14 @@ def LoadToDatabase(cur, tablename, buff, colbuff):
 					cur.execute(sql, row)
 					cur.execute("RELEASE SAVEPOINT insert")
 
-				except psycopg2.IntegrityError,e:
+				except psycopg2.IntegrityError as e:
 					if e.pgcode != "23505":
-						print e
+						print(e)
 						sys.exit(1)
 					cur.execute("ROLLBACK TO SAVEPOINT insert")
 					cur.execute("RELEASE SAVEPOINT insert")
 		else:
-			print e
+			print(e)
 			sys.exit(1)
 	return ret
 
@@ -121,11 +121,11 @@ def Load(infile_name):
 		if partition != prevPartition:
 			rows = LoadToDatabase(cur, prevPartition,buff, colbuff)
 			prevPartition = partition
-			print "Insert row count: %d" % (rows)
+			print("Insert row count: %d" % (rows))
 			totrows += rows
 			totlines += lines
 			if rows != lines:
-				print "Error: lines read=%d but rows loaded=%d" % (lines, rows)
+				print("Error: lines read=%d but rows loaded=%d" % (lines, rows))
 				sys.exit(1)
 			lines = 0
 			buff = []
@@ -139,7 +139,7 @@ def Load(infile_name):
 	rows = LoadToDatabase(cur, prevPartition,buff, colbuff)
 	totrows += rows
 	totlines += lines
-	print "total rows: %d loaded to database: %d" % (totlines, totrows)
+	print("total rows: %d loaded to database: %d" % (totlines, totrows))
 	conn.commit()
 
 	if totlines != totrows:

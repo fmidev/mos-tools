@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -122,7 +122,7 @@ def Read(infile):
 		try:
 			elem = parameters[param]
 		except KeyError:
-			print "Unknown parameter %s" % (param)
+			print("Unknown parameter %s" % (param))
 			sys.exit(1)
 
 		for j, factor in enumerate(factors):
@@ -147,7 +147,7 @@ def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, seaso
 	row = cur.fetchone()
 
 	if row == None:
-		print "Parameter id not found for name %s" % (target_param_name)
+		print("Parameter id not found for name %s" % (target_param_name))
 		sys.exit(1)
 
 	target_param_id = int(row[0])
@@ -159,7 +159,7 @@ def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, seaso
 	row = cur.fetchone()
 
 	if row == None:
-		print "mos version not found for label %s" % (mos_label)
+		print("mos version not found for label %s" % (mos_label))
 		sys.exit(1)
 
 	mos_version_id = int(row[0])
@@ -171,14 +171,14 @@ def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, seaso
 	row = cur.fetchone()
 
 	if row == None:
-		print "station id not found for wmo id %s" % (wmo_id)
+		print("station id not found for wmo id %s" % (wmo_id))
 		sys.exit(1)
 
 	station_id = int(row[0])
 
 	count = 0
 
-	for forecast_period,weightlist in values.items():
+	for forecast_period,weightlist in list(values.items()):
 		count = count+1
 
 		if set(weightlist.values()) == set(['0']):
@@ -187,7 +187,7 @@ def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, seaso
 			continue
 
 		str = '"'
-		for k,v in weightlist.items():
+		for k,v in list(weightlist.items()):
 			str += k + " => " + v + ","
 
 		str = str[:-1] + '"'
@@ -201,7 +201,7 @@ VALUES(%s, %s, %s, %s, %s * interval '1 hour', %s, 1, 0, %s)
 		
 		try:
 			cur.execute(sql, [mos_version_id, season_id, analysis_hour, station_id, forecast_period, target_param_id, weightlist])
-		except psycopg2.IntegrityError,e:
+		except psycopg2.IntegrityError as e:
 			if e.pgcode == "23505":
 				sql ="""
 UPDATE mos_weight
@@ -218,9 +218,9 @@ WHERE
 				#print cur.mogrify(sql, (factor, mos_version_id, PRODUCER_ID, int(station_id), int(period), target_param_id, param_id, level_id, level_value))
 				cur.execute(sql, (weightlist, mos_version_id, analysis_hour, int(station_id), int(forecast_period), target_param_id))
 			else:
-				print e	
+				print(e)	
 				sys.exit(1)
-	print "Inserted %s rows" % (count)
+	print("Inserted %s rows" % (count))
 
 def meta_from_name(filename,opts):
 	# Filename example:
@@ -258,7 +258,7 @@ def main():
 	try:
 		password = os.environ["MOS_MOSRW_PASSWORD"]
 	except:
-		print "password should be given with env variable MOS_MOSRW_PASSWORD"
+		print("password should be given with env variable MOS_MOSRW_PASSWORD")
 		sys.exit(1)
 
 	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, os.environ["MOS_HOSTNAME"], "mos", 5432)

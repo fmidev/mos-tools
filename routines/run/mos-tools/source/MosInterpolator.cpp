@@ -379,7 +379,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 
 	if (!reader.Open(fileName))
 	{
-		std::cerr << "File open failed" << std::endl;
+		std::cerr << "File open failed for " << fileName << std::endl;
 		throw 1;
 	}
 
