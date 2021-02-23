@@ -9,7 +9,7 @@
 #include <NFmiStreamQueryData.h>
 
 extern boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
-extern std::string GetPassword(const std::string& username);
+extern std::string GetEnv(const std::string& username);
 
 datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGridPointsInDegrees);
 datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset, const std::string& length);
@@ -24,11 +24,25 @@ MosInterpolator::MosInterpolator()
 {
 	call_once(oflag, [&]()
 	          {
-		          NFmiRadonDBPool::Instance()->Username("radon_client");
-		          NFmiRadonDBPool::Instance()->Password(GetPassword("RADON_RADONCLIENT_PASSWORD"));
-		          NFmiRadonDBPool::Instance()->Database("radon");
-		          NFmiRadonDBPool::Instance()->Hostname("vorlon");
-		      });
+			const auto pw = GetEnv("RADON_RADONCLIENT_PASSWORD");
+			const auto hostname = GetEnv("RADON_HOSTNAME");
+
+			if (pw.empty())
+			{
+				throw std::runtime_error("Password should be given with env variable 'RADON_RADONCLIENT_PASSWORD'");
+			}
+
+			if (hostname.empty())
+			{
+				throw std::runtime_error("Hostname should be given with env variable 'RADON_HOSTNAME'");
+			}
+
+			NFmiRadonDBPool::Instance()->Username("radon_client");
+			NFmiRadonDBPool::Instance()->Password(pw);
+			NFmiRadonDBPool::Instance()->Database("radon");
+			NFmiRadonDBPool::Instance()->Hostname(hostname);
+		}
+	);
 
 	itsRadonDB = std::unique_ptr<NFmiRadonDB>(NFmiRadonDBPool::Instance()->GetConnection());
 }

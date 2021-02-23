@@ -31,52 +31,44 @@ std::string ToHstore(const std::vector<ParamLevel>& keys, const boost::numeric::
 	return str;
 }
 
-std::string GetPassword(const std::string& username)
+std::string GetEnv(const std::string& key)
 {
-	const auto pw = getenv(username.c_str());
+	const auto val = getenv(key.c_str());
 
-	if (pw)
+	if (val)
 	{
-		return std::string(pw);
+		return std::string(val);
 	}
 	else
 	{
-		throw std::runtime_error("Password should be given with env variable " + username);
+		return "";
 	}
 }
 
-MosDB::MosDB()
+MosDB::MosDB() : MosDB(0)
 {
-	user_ = "mos_rw";
-	password_ = GetPassword("MOS_MOSRW_PASSWORD");
-	database_ = "mos";
-	hostname_ = "vorlon.fmi.fi";
-
-	const char* host = getenv("MOS_HOSTNAME");
-
-	if (host)
-	{
-		hostname_ = std::string(host);
-	}
-
-	std::cout << "MosDB details: " << user_ << "/xxx@" << hostname_ << std::endl;
 }
 
 MosDB::MosDB(int theId) : NFmiPostgreSQL(theId)
 {
 	user_ = "mos_rw";
-	password_ = GetPassword("MOS_MOSRW_PASSWORD");
-	database_ = "mos";
-	hostname_ = "vorlon.fmi.fi";
+	password_ = GetEnv("MOS_MOSRW_PASSWORD");
 
-	const char* host = getenv("MOS_HOSTNAME");
-
-	if (host)
+	if (password_.empty())
 	{
-		hostname_ = std::string(host);
+		throw std::runtime_error("Password should be given with env variable 'MOS_MOSRW_PASSWORD'");
+	}
+
+	database_ = "mos";
+	hostname_ = GetEnv("MOS_HOSTNAME");
+
+	if (hostname_.empty())
+	{
+		throw std::runtime_error("Hostname should be given with env variable 'MOS_HOSTNAME'");
 	}
 
 	std::cout << "MosDB details: " << user_ << "/xxx@" << hostname_ << std::endl;
+
 }
 
 MosDB::~MosDB() { Disconnect(); }

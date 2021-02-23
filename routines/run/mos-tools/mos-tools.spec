@@ -3,7 +3,7 @@
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
 Version:        21.2.23
-Release:        1.el7.fmi
+Release:        2.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
 License:        FMI
@@ -54,7 +54,9 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
-* Tue Feb 23 2021 Mikko Aalto <mikko.aalto@fmi.fi> - 21.2.23-1.fmi
+* Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-2.fmi
+- Remove hard coded references to database hostnames
+* Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-1.fmi
 - New newbase
 * Wed Aug 26 2020 Mikko Aalto <mikko.aalto@fmi.fi> - 20.10.14-1.fmi
 - Changes in maxt/mint parameter
