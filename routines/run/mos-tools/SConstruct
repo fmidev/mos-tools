@@ -37,6 +37,7 @@ if os.environ.get('INCLUDE') != None:
         includes.append(os.environ.get('INCLUDE'))
 
 includes.append('include')
+includes.append('/usr/include/smartmet')
 includes.append('/usr/include/smartmet/newbase')
 
 env.Append(CPPPATH = includes)
