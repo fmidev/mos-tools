@@ -2,8 +2,8 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        21.2.23
-Release:        2.el7.fmi
+Version:        21.4.26
+Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
 License:        FMI
@@ -14,11 +14,12 @@ BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmidb-devel >= 20.8.17
 BuildRequires:  eccodes-devel
 BuildRequires:  boost169-devel
-BuildRequires:  scons
+BuildRequires:  python3-scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
 BuildRequires:  smartmet-library-newbase-devel >= 21.2.20
 BuildRequires:  smartmet-library-gis-devel
+BuildRequires:  fmt-devel
 Requires:	libfmidb >= 20.8.17
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
@@ -27,6 +28,8 @@ Requires:	eccodes
 Requires:       smartmet-library-newbase >= 21.2.20
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
+Requires:	fmt
+Requires:	oracle-instantclient-basic
 Provides:	mosse
 
 AutoReqProv:	no
@@ -54,6 +57,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Apr 26 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.26-1.fmi
+- use fmt::format
 * Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-2.fmi
 - Remove hard coded references to database hostnames
 * Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-1.fmi
