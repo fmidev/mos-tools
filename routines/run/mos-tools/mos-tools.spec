@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        21.4.26
+Version:        21.7.22
 Release:        1.el7.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -17,7 +17,7 @@ BuildRequires:  boost169-devel
 BuildRequires:  python3-scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
-BuildRequires:  smartmet-library-newbase-devel >= 21.2.20
+BuildRequires:  smartmet-library-newbase-devel >= 21.6.16
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  fmt-devel
 Requires:	libfmidb >= 20.8.17
@@ -25,7 +25,7 @@ Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
 Requires:       libpqxx
 Requires:	eccodes
-Requires:       smartmet-library-newbase >= 21.2.20
+Requires:       smartmet-library-newbase >= 21.6.16
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
 Requires:	fmt
@@ -57,6 +57,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Thu Jul 22 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.7.22-1.fmi
+- New newbase
 * Mon Apr 26 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.26-1.fmi
 - use fmt::format
 * Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-2.fmi

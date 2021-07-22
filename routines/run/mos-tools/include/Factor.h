@@ -5,6 +5,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include <fmt/format.h>
 
 inline
 std::string ToSQLTime(const boost::posix_time::ptime& ts)
@@ -12,12 +13,10 @@ std::string ToSQLTime(const boost::posix_time::ptime& ts)
         const auto& date = ts.date();
         const auto& time = ts.time_of_day();
 
-        char fmt[20];
-        snprintf(fmt, 20, "%04d-%02d-%02d %02d:%02d:%02d", static_cast<int>(date.year()), static_cast<int>(date.month()),
+	return fmt::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}", static_cast<int>(date.year()), static_cast<int>(date.month()),
                  static_cast<int>(date.day()), static_cast<int>(time.hours()), static_cast<int>(time.minutes()),
                  static_cast<int>(time.seconds()));
 
-        return std::string(fmt);
 }
 
 struct ParamLevel
