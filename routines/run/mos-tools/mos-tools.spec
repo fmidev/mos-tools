@@ -2,8 +2,8 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        21.7.22
-Release:        1.el7.fmi
+Version:        21.8.2
+Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
 License:        FMI
@@ -57,6 +57,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Aug  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.2-1.fmi
+- New fmidb / pqxx7
 * Thu Jul 22 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.7.22-1.fmi
 - New newbase
 * Mon Apr 26 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.26-1.fmi
