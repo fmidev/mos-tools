@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        21.8.2
+Version:        22.1.18
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -11,21 +11,21 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
-BuildRequires:  libfmidb-devel >= 20.8.17
+BuildRequires:  libfmidb-devel >= 22.1.14
 BuildRequires:  eccodes-devel
 BuildRequires:  boost169-devel
 BuildRequires:  python3-scons
 BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 4.8.3 
-BuildRequires:  smartmet-library-newbase-devel >= 21.6.16
+BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  fmt-devel
-Requires:	libfmidb >= 20.8.17
+Requires:	libfmidb >= 22.1.14
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
-Requires:       libpqxx
+Requires:       libpqxx >= 7.6.0
 Requires:	eccodes
-Requires:       smartmet-library-newbase >= 21.6.16
+Requires:       smartmet-library-newbase >= 21.12.7
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
 Requires:	fmt
@@ -57,6 +57,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Tue Jan 17 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.18-1.fmi
+- pqxx7.6
 * Mon Aug  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.2-1.fmi
 - New fmidb / pqxx7
 * Thu Jul 22 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.7.22-1.fmi

@@ -61,6 +61,8 @@ libraries.append('fmidb')
 libraries.append('pqxx')
 libraries.append('clntsh')
 libraries.append('pthread')
+libraries.append('pq')
+libraries.append('fmt')
 
 env.Append(LIBS = libraries)
 
@@ -111,7 +113,7 @@ cflags_difficult.append('-Wctor-dtor-privacy')
 # Default flags (common for release/debug)
 
 cflags = []
-cflags.append('-std=c++11')
+cflags.append('-std=c++17')
 
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
@@ -129,7 +131,7 @@ env.Append(CPPDEFINES=['UNIX'])
 build_dir = ""
 
 if RELEASE:
-	env.Append(CCFLAGS = ['-O2'])
+	env.Append(CCFLAGS = ['-O2','-g'])
 	env.Append(CPPDEFINES = ['NDEBUG'])
 	build_dir = "build/release"
 
