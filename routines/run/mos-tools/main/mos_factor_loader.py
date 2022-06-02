@@ -6,6 +6,7 @@ import psycopg2
 import psycopg2.extras
 import argparse
 import fnmatch
+import time
 
 parameters = {
     #"CSV_PARAMETER_NAME : DATABASE_PARAMETER_NAME/DATABASE_LEVEL_NAME/LEVEL_VALUE/TIME_STEP_ADJUSTMENT"
@@ -38,6 +39,8 @@ parameters = {
     "SKT" : "SKT-K/GROUND/0",
     "MX2T3" : "TMAX3H-K/GROUND/0",
     "MN2T3" : "TMIN3H-K/GROUND/0",
+    "MX2T" : "TMAX-K/GROUND/0",
+    "MN2T" : "TMIN-K/GROUND/0",
     "TCW" : "TOTCW-KGM2/GROUND/0",
     "SLHF" : "FLLAT-JM2/GROUND/0",
     "CBH" : "CLDBASE-M/GROUND/0",
@@ -72,19 +75,25 @@ parameters = {
     "Z_500" : "Z-M2S2/PRESSURE/500" 
 }
 
+mos_version_id = None
+station_cache = None
+plan_created = False
+
 def ParseCommandLine(argv):
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-m", "--mos-label", required=True, help="mos label (version) name")
     parser.add_argument("-a", "--analysis-hour", required=False, help="analysis hour")
-    parser.add_argument("-w", "--wmo", required=False, help="wmo id of station")
-    parser.add_argument("-p", "--param", required=False, help="neons parameter name of target param")
+    parser.add_argument("-w", "--station_id", required=False, help="id of station in the given network")
+    parser.add_argument("-n", "--network-id", required=False, default=1, help="id of network, 1=wmo, 5=fmisid (default: 1)")
+    parser.add_argument("-p", "--param", required=False, help="radon parameter name of target param")
     parser.add_argument("-s", "--season", required=False, help="season id, 1=winter, 3=summer")
     parser.add_argument('file', nargs='+', help='Input file (csv)')
 
     args = parser.parse_args()
 
     return args
+
 
 def Read(infile):
     ret = {}
@@ -100,22 +109,20 @@ def Read(infile):
         line = line.strip()
 
         if i == 1:
+            # header
             periods = line.split(',')
             periods = [int(x.strip().replace('"','')) for x in periods[1:]]
-            assert(len(periods) == 65)
-
+            assert(len(periods) == 65 or len(periods) == 125)
             continue
 
         factors = line.split(",")
-
         factors = [x.strip() for x in factors]
-
         param = factors[0].replace('"','')
 
         # remove first element from list which is the param name
         factors.pop(0)
 
-        assert(len(factors) == 65)
+        assert(len(factors) == len(periods))
 
         elem = None
 
@@ -126,18 +133,58 @@ def Read(infile):
             sys.exit(1)
 
         for j, factor in enumerate(factors):
-
             try:
                 ret[periods[j]][elem] = factor
             except KeyError:
                 ret[periods[j]] = {}
                 ret[periods[j]][elem] = factor
 
+    f.close()
+
     return ret
 
-def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, season_id):
+def GetMosVersionId(cur, mos_label):
+    global mos_version_id
+
+    if mos_version_id is None:
+
+        sql = "SELECT id FROM mos_version WHERE label = %s"
+
+        cur.execute(sql, [mos_label,])
+
+        row = cur.fetchone()
+
+        if row == None:
+            print("mos version not found for label %s" % (mos_label))
+            sys.exit(1)
+
+        mos_version_id = int(row[0])
+
+    return mos_version_id
 
 
+def GetStationId(cur, network_id, station_id):
+    global station_cache
+
+    if station_cache is None:
+        print("Fill station cache")
+        station_cache = {}
+        sql = "SELECT local_station_id,station_id FROM station_network_mapping WHERE network_id = %s" # AND local_station_id::int = %s"
+        cur.execute(sql, [network_id])
+
+        rows = cur.fetchall()
+        for row in rows:
+            station_cache[row[0]] = row[1]
+
+    return station_cache[station_id]
+
+
+
+def Load(cur, values, mos_label, analysis_hour, network_id, station_id, target_param_name, season_id):
+    
+    start = time.process_time()
+
+    global plan_created
     dbparam = parameters[target_param_name].split('/')[0]
 
     sql = "SELECT id FROM param WHERE name = %s"
@@ -152,31 +199,20 @@ def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, seaso
 
     target_param_id = int(row[0])
 
-    sql = "SELECT id FROM mos_version WHERE label = %s"
-
-    cur.execute(sql, [mos_label,])
-
-    row = cur.fetchone()
-
-    if row == None:
-        print("mos version not found for label %s" % (mos_label))
-        sys.exit(1)
-
-    mos_version_id = int(row[0])
-
-    sql = "SELECT station_id FROM station_network_mapping WHERE network_id = 1 AND local_station_id::int = %s"
-
-    cur.execute(sql, [wmo_id,])
-
-    row = cur.fetchone()
-
-    if row == None:
-        print("station id not found for wmo id %s" % (wmo_id))
-        sys.exit(1)
-
-    station_id = int(row[0])
+    mos_version_id = GetMosVersionId(cur, mos_label)
+    db_station_id = GetStationId(cur, network_id, station_id)
 
     count = 0
+
+    if plan_created is False:
+        inssql ="""
+PREPARE insertplan AS INSERT INTO 
+  mos_weight (mos_version_id, mos_period_id, analysis_hour, station_id, forecast_period, target_param_id, target_level_id, target_level_value, weights)
+VALUES ($1, $2, $3, $4, $5 * interval '1 hour', $6, 1, 0, $7)
+"""
+
+        cur.execute(inssql)
+        plan_created = True
 
     for forecast_period,weightlist in list(values.items()):
         count = count+1
@@ -192,15 +228,10 @@ def Load(cur, values, mos_label, analysis_hour, wmo_id, target_param_name, seaso
 
         str = str[:-1] + '"'
     
-        sql ="""
-INSERT INTO 
-  mos_weight (mos_version_id, mos_period_id, analysis_hour, station_id, forecast_period, target_param_id, target_level_id, target_level_value, weights)
-VALUES(%s, %s, %s, %s, %s * interval '1 hour', %s, 1, 0, %s)
-"""
-        #print "%s,%s,%s,%s,%s,%s,1,0,%s" % (mos_version_id, season_id, analysis_hour, station_id, forecast_period, target_param_id, str)
-        
+        #print ("%s,%s,%s,%s,%s,%s,%s" % (mos_version_id, season_id, analysis_hour, network_id, db_station_id, forecast_period, target_param_id))
+
         try:
-            cur.execute(sql, [mos_version_id, season_id, analysis_hour, station_id, forecast_period, target_param_id, weightlist])
+            cur.execute("EXECUTE insertplan (%s,%s,%s,%s,%s,%s,%s)",[mos_version_id, season_id, analysis_hour, db_station_id, forecast_period, target_param_id, weightlist])
         except psycopg2.IntegrityError as e:
             if e.pgcode == "23505":
                 sql ="""
@@ -215,12 +246,12 @@ WHERE
     target_level_id = 1 AND
     target_level_value = 0
 """
-                #print cur.mogrify(sql, (factor, mos_version_id, PRODUCER_ID, int(station_id), int(period), target_param_id, param_id, level_id, level_value))
-                cur.execute(sql, (weightlist, mos_version_id, analysis_hour, int(station_id), int(forecast_period), target_param_id))
+                #print (cur.mogrify(sql, (factor, mos_version_id, PRODUCER_ID, int(station_id), int(period), target_param_id, param_id, level_id, level_value)))
+                cur.execute(sql, (weightlist, mos_version_id, analysis_hour, db_station_id, int(forecast_period), target_param_id))
             else:
                 print(e)    
                 sys.exit(1)
-    print("Inserted %s rows" % (count))
+    print("Inserted {} rows in {:.2f} sec".format(count, (time.process_time() - start)))
 
 def meta_from_name(filename,opts):
     # Filename example:
@@ -229,10 +260,10 @@ def meta_from_name(filename,opts):
     nameInfo = filename.split('_')
     ret = {}
 
-    if opts.wmo is not None:
-        ret['wmo_id'] = opts.wmo
+    if opts.station_id is not None:
+        ret['station_id'] = opts.station_id
     else:
-        ret['wmo_id'] = nameInfo[1]
+        ret['station_id'] = nameInfo[1]
 
     if opts.analysis_hour is not None:
         ret['ahour'] = opts.analysis_hour
@@ -248,6 +279,8 @@ def meta_from_name(filename,opts):
         ret['season_id'] = opts.param
     else:
         ret['season_id'] = nameInfo[3][-1]
+
+    ret['network_id'] = opts.network_id
 
     return ret
 
@@ -279,14 +312,17 @@ def main():
                 for file in matches:
                     count = count+1
                     nameInfo = meta_from_name(os.path.basename(file), opts)
-
                     values = Read(file)
-                    Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['wmo_id'], nameInfo['target_param_name'], nameInfo['season_id'])
+                    Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['network_id'], nameInfo['station_id'], nameInfo['target_param_name'], nameInfo['season_id'])
+
+                    if count % 100 == 0:
+                        print("Committing after {} files".format(count))
+                        conn.commit()
     else:
         nameInfo = meta_from_name(os.path.basename(opts.file[0]), opts)
 
         values = Read(opts.file[0])
-        Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['wmo_id'], nameInfo['target_param_name'], nameInfo['season_id'])
+        Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['network_id'], nameInfo['station_id'], nameInfo['target_param_name'], nameInfo['season_id'])
 
     conn.commit()
 
