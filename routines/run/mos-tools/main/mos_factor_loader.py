@@ -7,6 +7,7 @@ import psycopg2.extras
 import argparse
 import fnmatch
 import time
+import glob
 
 parameters = {
     #"CSV_PARAMETER_NAME : DATABASE_PARAMETER_NAME/DATABASE_LEVEL_NAME/LEVEL_VALUE/TIME_STEP_ADJUSTMENT"
@@ -303,21 +304,18 @@ def main():
 
     cur = conn.cursor()
     
-    count = 0
     if os.path.isdir(opts.file[0]):
-        matches = []
-        for root, dirnames, filenames in os.walk(opts.file[0]):
-            for filename in fnmatch.filter(filenames, 'station*.csv'):
-                matches.append(os.path.join(root, filename))
-                for file in matches:
-                    count = count+1
-                    nameInfo = meta_from_name(os.path.basename(file), opts)
-                    values = Read(file)
-                    Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['network_id'], nameInfo['station_id'], nameInfo['target_param_name'], nameInfo['season_id'])
+        count = 0
+        files = glob.glob('{}/station*.csv'.format(opts.file[0]))
+        for filename in files:
+            count = count+1
+            nameInfo = meta_from_name(os.path.basename(filename), opts)
+            values = Read(filename)
+            Load(cur, values, opts.mos_label, nameInfo['ahour'], nameInfo['network_id'], nameInfo['station_id'], nameInfo['target_param_name'], nameInfo['season_id'])
 
-                    if count % 100 == 0:
-                        print("Committing after {} files".format(count))
-                        conn.commit()
+            if count % 1000 == 0:
+                print("Committing after {} files".format(count))
+                conn.commit()
     else:
         nameInfo = meta_from_name(os.path.basename(opts.file[0]), opts)
 
