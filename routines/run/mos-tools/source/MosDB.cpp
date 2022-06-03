@@ -1,11 +1,11 @@
 #include "MosDB.h"
-#include <sstream>
-#include <iomanip>
-#include <unistd.h>
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string_regex.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <iomanip>
+#include <sstream>
+#include <unistd.h>
 
 #ifdef DEBUG
 #include <boost/numeric/ublas/io.hpp>
@@ -45,9 +45,7 @@ std::string GetEnv(const std::string& key)
 	}
 }
 
-MosDB::MosDB() : MosDB(0)
-{
-}
+MosDB::MosDB() : MosDB(0) {}
 
 MosDB::MosDB(int theId) : NFmiPostgreSQL(theId)
 {
@@ -68,7 +66,6 @@ MosDB::MosDB(int theId) : NFmiPostgreSQL(theId)
 	}
 
 	std::cout << "MosDB details: " << user_ << "/xxx@" << hostname_ << std::endl;
-
 }
 
 MosDB::~MosDB() { Disconnect(); }
@@ -144,7 +141,7 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step)
 	      << "v.label = '" << mosInfo.label << "' AND "
 	      << "p.name = '" << mosInfo.paramName << "' AND "
 	      << "p.id = f.target_param_id AND "
-	      << "snm.network_id = 1 AND "
+	      << "snm.network_id = " << mosInfo.networkId << " AND "
 	      << "snm.station_id = s.id AND "
 	      << "f.station_id = s.id AND "
 	      << "f.mos_version_id = v.id AND "

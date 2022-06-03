@@ -1,12 +1,12 @@
+#include "MosDB.h"
+#include "MosWorker.h"
+#include "NFmiRadonDB.h"
 #include <boost/program_options.hpp>
-#include <thread>
+#include <iostream>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
-#include <iostream>
-#include "MosDB.h"
-#include "NFmiRadonDB.h"
-#include "MosWorker.h"
 
 std::mutex mut;
 static std::vector<std::string> params;
@@ -19,6 +19,7 @@ struct Options
 	int endStep;
 	int stepLength;
 	int stationId;
+	int networkId;
 
 	std::string mosLabel;
 	std::string paramName;
@@ -32,6 +33,7 @@ struct Options
 	      endStep(-1),
 	      stepLength(1),
 	      stationId(-1),
+	      networkId(1),
 	      mosLabel(""),
 	      paramName(""),
 	      analysisTime(""),
@@ -57,6 +59,7 @@ void ParseCommandLine(int argc, char** argv)
 		("end-step,e", po::value(&opts.endStep), "end step")
 		("step-length,l", po::value(&opts.stepLength), "step length")
 		("station-id,S", po::value(&opts.stationId), "station id, comma separated list")
+		("network-id,n", po::value(&opts.networkId), "network id (1=wmo, 5=fmisid, default=1)")
 		("parameter,p", po::value(&opts.paramName), "parameter name (radon-style), comma separated list")
 		("trace", "write trace information to log and database (default false)")
 		("analysis_time,a", po::value(&opts.analysisTime), "specify analysis time (SQL full timestamp, default=latest from database)")
@@ -177,7 +180,15 @@ int main(int argc, char** argv)
 		mosInfo.originTime = opts.analysisTime;
 	}
 
+	const std::string ahour = mosInfo.originTime.substr(11, 2);
+
+	if (ahour != "00" && ahour != "12")
+	{
+		throw std::runtime_error("analysis hour is neither 00 nor 12");
+	}
+
 	mosInfo.traceOutput = opts.trace;
+	mosInfo.networkId = opts.networkId;
 
 #ifdef DEBUG
 	std::cout << "Analysis time: " << mosInfo.originTime << std::endl;

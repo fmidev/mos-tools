@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        22.1.18
+Version:        22.6.3
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -20,6 +20,7 @@ BuildRequires:  gcc-c++ >= 4.8.3
 BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  fmt-devel
+BuildRequires:  postgresql13-devel
 Requires:	libfmidb >= 22.1.14
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
@@ -30,6 +31,7 @@ Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
 Requires:	fmt
 Requires:	oracle-instantclient-basic
+Requires:	postgresql13-libs
 Provides:	mosse
 
 AutoReqProv:	no
@@ -57,6 +59,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Fri Jun  3 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.3-1.fmi
+- Support for MOS version MOS_ECMWF_040422
 * Tue Jan 17 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.18-1.fmi
 - pqxx7.6
 * Mon Aug  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.2-1.fmi

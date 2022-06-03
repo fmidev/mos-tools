@@ -49,6 +49,7 @@ librarypaths = []
 librarypaths.append('/usr/lib64')
 librarypaths.append('/usr/lib64/oracle')
 librarypaths.append('/usr/lib64/boost169')
+librarypaths.append('/usr/pgsql-13/lib')
 
 env.Append(LIBPATH = librarypaths)
 
@@ -59,7 +60,6 @@ libraries = []
 libraries.append('smartmet-newbase')
 libraries.append('fmidb')
 libraries.append('pqxx')
-libraries.append('clntsh')
 libraries.append('pthread')
 libraries.append('pq')
 libraries.append('fmt')
@@ -122,7 +122,7 @@ env.AppendUnique(CCFLAGS=('-isystem', '/usr/include/boost169'))
 
 # Linker flags
 
-env.Append(LINKFLAGS = ['-Wl,--as-needed'])
+env.Append(LINKFLAGS = ['-Wl,--as-needed','-Wl,--warn-unresolved-symbols'])
 
 # Defines
 

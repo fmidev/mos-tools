@@ -1,18 +1,19 @@
 #include "MosInterpolator.h"
 #include "NFmiGrib.h"
 #include <NFmiLatLonArea.h>
-#include <NFmiRotatedLatLonArea.h>
-#include <NFmiTimeList.h>
 #include <NFmiMetTime.h>
 #include <NFmiQueryData.h>
 #include <NFmiQueryDataUtil.h>
+#include <NFmiRotatedLatLonArea.h>
 #include <NFmiStreamQueryData.h>
+#include <NFmiTimeList.h>
 
 extern boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
 extern std::string GetEnv(const std::string& username);
 
 datas InterpolateToGrid(NFmiFastQueryInfo& sourceInfo, double distanceBetweenGridPointsInDegrees);
-datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset, const std::string& length);
+datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset,
+                  const std::string& length);
 double Declination(int step, const std::string& originTime);
 FmiInterpolationMethod InterpolationMethod(const std::string& paramName);
 
@@ -22,27 +23,28 @@ static std::once_flag oflag;
 
 MosInterpolator::MosInterpolator()
 {
-	call_once(oflag, [&]()
-	          {
-			const auto pw = GetEnv("RADON_RADONCLIENT_PASSWORD");
-			const auto hostname = GetEnv("RADON_HOSTNAME");
+	call_once(
+	    oflag,
+	    [&]()
+	    {
+		    const auto pw = GetEnv("RADON_RADONCLIENT_PASSWORD");
+		    const auto hostname = GetEnv("RADON_HOSTNAME");
 
-			if (pw.empty())
-			{
-				throw std::runtime_error("Password should be given with env variable 'RADON_RADONCLIENT_PASSWORD'");
-			}
+		    if (pw.empty())
+		    {
+			    throw std::runtime_error("Password should be given with env variable 'RADON_RADONCLIENT_PASSWORD'");
+		    }
 
-			if (hostname.empty())
-			{
-				throw std::runtime_error("Hostname should be given with env variable 'RADON_HOSTNAME'");
-			}
+		    if (hostname.empty())
+		    {
+			    throw std::runtime_error("Hostname should be given with env variable 'RADON_HOSTNAME'");
+		    }
 
-			NFmiRadonDBPool::Instance()->Username("radon_client");
-			NFmiRadonDBPool::Instance()->Password(pw);
-			NFmiRadonDBPool::Instance()->Database("radon");
-			NFmiRadonDBPool::Instance()->Hostname(hostname);
-		}
-	);
+		    NFmiRadonDBPool::Instance()->Username("radon_client");
+		    NFmiRadonDBPool::Instance()->Password(pw);
+		    NFmiRadonDBPool::Instance()->Database("radon");
+		    NFmiRadonDBPool::Instance()->Hostname(hostname);
+	    });
 
 	itsRadonDB = std::unique_ptr<NFmiRadonDB>(NFmiRadonDBPool::Instance()->GetConnection());
 }
@@ -277,12 +279,16 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		          << " has step adjustment " << pl.stepAdjustment << std::endl;
 #endif
 
-		if (step < 3)
+		if (step < 0)
 		{
 			throw std::runtime_error("Previous timestep data requested for time step 0");
 		}
 
-		if (step <= 144)
+		if (mosInfo.label == "MOS_ECMWF_040422" && step <= 90 && paramName != "T-MEAN-K")
+		{
+			step += 1 * pl.stepAdjustment;
+		}
+		else if (step <= 144)
 		{
 			step += 3 * pl.stepAdjustment;
 		}
@@ -310,15 +316,26 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		step += 12;
 	}
 
-
-	// Fetching T-MEAN-K from previous forecast does not work for leadtime 135/141:
-	// leadtime 147/153 does not exist! In this case use data from leadtime 144/150.
-
-	if (paramName == "T-MEAN-K" && pl.originTimeAdjustment == -1 && (step == 147 || step == 153))
+	if (paramName == "T-MEAN-K" && pl.originTimeAdjustment == -1)
 	{
-		step -= 3;
-	}
+		int origStep = step;
 
+		// Fetching T-MEAN-K from previous forecast does not work for leadtime 135/141:
+		// leadtime 147/153 does not exist! In this case use data from leadtime 144/150.
+
+		if ((step == 147 || step == 153))
+		{
+			step -= 3;
+			std::cout << "Adjusting T-MEAN-K step from " << origStep << " to " << step << std::endl;
+		}
+
+		// T-MEAN-K does not exist for 1h steps
+		else if (step <= 90)
+		{
+			step -= (step % 3);
+			std::cout << "Adjusting T-MEAN-K step from " << origStep << " to " << step << std::endl;
+		}
+	}
 	auto prodInfo = itsRadonDB->GetProducerDefinition(producerId);
 
 	assert(prodInfo.size());
@@ -343,7 +360,7 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 				          return true;
 			          }
 			          return false;
-			      });
+		          });
 	}
 
 	std::vector<datas> ret;
@@ -354,16 +371,15 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 
 		std::stringstream query;
 
-		query
-		    << "SELECT param_name, level_name, level_value, extract(epoch from forecast_period) / 3600, "
-		    << "file_location, byte_offset, byte_length "
-		    << "FROM " << tableName << "_v "
-		    << "WHERE param_name = upper('" << paramName << "') "
-		    << "AND level_name = upper('" << levelName << "') "
-		    << "AND level_value = " << pl.levelValue << " "
-		    << "AND extract(epoch from forecast_period) / 3600 = " << step << " AND analysis_time = '" << realOrigin
-		    << "'"
-		    << " AND geometry_id = " << geom[0] << " ORDER BY 4,2,3";
+		query << "SELECT param_name, level_name, level_value, extract(epoch from forecast_period) / 3600, "
+		      << "file_location, byte_offset, byte_length "
+		      << "FROM " << tableName << "_v "
+		      << "WHERE param_name = upper('" << paramName << "') "
+		      << "AND level_name = upper('" << levelName << "') "
+		      << "AND level_value = " << pl.levelValue << " "
+		      << "AND extract(epoch from forecast_period) / 3600 = " << step << " AND analysis_time = '" << realOrigin
+		      << "'"
+		      << " AND geometry_id = " << geom[0] << " ORDER BY 4,2,3";
 
 		itsRadonDB->Query(query.str());
 
@@ -387,7 +403,8 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 	return ret;
 }
 
-datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset, const std::string& length)
+datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, const std::string& offset,
+                  const std::string& length)
 {
 	NFmiGrib reader;
 
