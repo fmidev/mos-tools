@@ -148,8 +148,13 @@ Weights MosDB::GetWeights(const MosInfo& mosInfo, int step)
 	      << "pe.id = f.mos_period_id AND "
 	      << "extract(epoch FROM f.forecast_period)/3600 = " << step << " AND "
 	      << "analysis_hour = " << mosInfo.originTime.substr(11, 2) << " AND "
-	      << "pe.id = " << periodId << " "
-	      << "ORDER BY wmo_id, forecast_period, weight_keys";
+	      << "pe.id = " << periodId << " ";
+
+	if (mosInfo.stationId != -1)
+	{
+		query << "AND snm.local_station_id::int IN (" << mosInfo.stationId << ") ";
+	}
+	query << "ORDER BY wmo_id, forecast_period, weight_keys";
 
 	Query(query.str());
 

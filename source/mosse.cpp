@@ -189,6 +189,7 @@ int main(int argc, char** argv)
 
 	mosInfo.traceOutput = opts.trace;
 	mosInfo.networkId = opts.networkId;
+	mosInfo.stationId = opts.stationId;
 
 #ifdef DEBUG
 	std::cout << "Analysis time: " << mosInfo.originTime << std::endl;

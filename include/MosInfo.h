@@ -9,6 +9,7 @@ struct MosInfo
 	std::string originTime;  // forecast analysis time
 
 	int networkId;
+	int stationId;
 	int id;
 	int producerId;
 
