@@ -59,7 +59,7 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
-* Mon Jun  6 2022Mikko Partio <mikko.partio@fmi.fi> - 22.6.6-1.fmi
+* Mon Jun  6 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.6-1.fmi
 - Do not fetch T-MEAN-K for leadtimes < 150
 * Fri Jun  3 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.3-1.fmi
 - Support for MOS version MOS_ECMWF_040422
