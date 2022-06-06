@@ -83,6 +83,12 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 		return kFloatMissing;
 	}
 
+	// The factor for T-MEAN-K is zero for leadtimes < 150
+	if (step < 150 && pl.paramName == "T-MEAN-K")
+	{
+		return kFloatMissing;
+	}
+
 	NFmiPoint latlon(station.longitude, station.latitude);
 
 	// These are cumulative parameters
