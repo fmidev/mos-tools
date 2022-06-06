@@ -184,7 +184,7 @@ int main(int argc, char** argv)
 
 	if (ahour != "00" && ahour != "12")
 	{
-		throw std::runtime_error("analysis hour is neither 00 nor 12");
+		throw std::runtime_error("analysis hour is neither 00 nor 12 (" + mosInfo.originTime + ")");
 	}
 
 	mosInfo.traceOutput = opts.trace;
