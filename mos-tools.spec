@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        22.6.6
+Version:        22.6.13
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -59,6 +59,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Jun 13 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.13-1.fmi
+- Fixing step size for leadtimes <= 90
 * Mon Jun  6 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.6-1.fmi
 - Do not fetch T-MEAN-K for leadtimes < 150
 * Fri Jun  3 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.3-1.fmi

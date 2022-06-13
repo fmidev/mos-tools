@@ -65,7 +65,7 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 {
 	auto key = Key(pl, step, mosInfo.originTime);
 
-	assert(step >= 3);
+	assert(step >= 0);
 
 	// Special cases
 
@@ -102,9 +102,19 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 	     pl.paramName == "RNETLW-WM2" || pl.paramName == "RADDIRSOLAR-JM2" || pl.paramName == "RADLW-WM2" ||
 	     pl.paramName == "RADGLO-WM2");
 
-	int prevStep = (step > 144) ? step - 6 : step - 3;
+	int prevStep;
 
-	assert(prevStep >= 0 && prevStep <= 234);
+	if (step > 144) {
+		prevStep = step - 6;
+	}
+	else if (step > 90)
+	{
+		prevStep = step - 3;
+	}
+	else
+	{
+		prevStep = step - 1;
+	}
 
 	if (itsDatas.find(key) == itsDatas.end())
 	{
