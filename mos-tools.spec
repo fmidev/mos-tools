@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        22.6.13
+Version:        22.8.24
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -24,7 +24,7 @@ BuildRequires:  postgresql13-devel
 Requires:	libfmidb >= 22.1.14
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
-Requires:       libpqxx >= 7.6.0
+Requires:       libpqxx >= 7.7.0
 Requires:	eccodes
 Requires:       smartmet-library-newbase >= 21.12.7
 Requires:       smartmet-library-gis
@@ -59,6 +59,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Aug 24 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.8.24-1.fmi
+- pqxx 7.7
 * Mon Jun 13 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.13-1.fmi
 - Fixing step size for leadtimes <= 90
 * Mon Jun  6 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.6-1.fmi
