@@ -135,7 +135,8 @@ def Read(infile):
 
         for j, factor in enumerate(factors):
             try:
-                ret[periods[j]][elem] = factor
+                if factor != '0':
+                    ret[periods[j]][elem] = factor
             except KeyError:
                 ret[periods[j]] = {}
                 ret[periods[j]][elem] = factor
