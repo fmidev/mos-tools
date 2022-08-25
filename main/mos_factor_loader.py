@@ -113,7 +113,7 @@ def Read(infile):
             # header
             periods = line.split(',')
             periods = [int(x.strip().replace('"','')) for x in periods[1:]]
-            assert(len(periods) == 65 or len(periods) == 125)
+            assert(len(periods) > 0)
             continue
 
         factors = line.split(",")
@@ -135,8 +135,7 @@ def Read(infile):
 
         for j, factor in enumerate(factors):
             try:
-                if factor != '0':
-                    ret[periods[j]][elem] = factor
+                ret[periods[j]][elem] = factor
             except KeyError:
                 ret[periods[j]] = {}
                 ret[periods[j]][elem] = factor
@@ -202,7 +201,12 @@ def Load(cur, values, mos_label, analysis_hour, network_id, station_id, target_p
     target_param_id = int(row[0])
 
     mos_version_id = GetMosVersionId(cur, mos_label)
-    db_station_id = GetStationId(cur, network_id, station_id)
+
+    try:
+        db_station_id = GetStationId(cur, network_id, station_id)
+    except KeyError as e:
+        print("Unrecognized station {}".format(station_id))
+        return
 
     count = 0
 
@@ -251,7 +255,7 @@ WHERE
                 #print (cur.mogrify(sql, (factor, mos_version_id, PRODUCER_ID, int(station_id), int(period), target_param_id, param_id, level_id, level_value)))
                 cur.execute(sql, (weightlist, mos_version_id, analysis_hour, db_station_id, int(forecast_period), target_param_id))
             else:
-                print(e)    
+                print(e)
                 sys.exit(1)
     print("Inserted {} rows in {:.2f} sec".format(count, (time.process_time() - start)))
 
