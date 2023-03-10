@@ -32,6 +32,7 @@ Requires:       smartmet-library-macgyver
 Requires:	fmt
 Requires:	oracle-instantclient-basic
 Requires:	postgresql13-libs
+Requires:	python3-psycopg2
 Provides:	mosse
 
 AutoReqProv:	no
