@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        23.4.14
+Version:        23.7.24
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -60,6 +60,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Mon Jul 23 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
+- Add option to mos_factor_loader.py to delete weights from database
 * Fri Apr 14 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.4.14-1.fmi
 - Minor update to mos_factor_loader.py
 * Wed Aug 24 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.8.24-1.fmi
