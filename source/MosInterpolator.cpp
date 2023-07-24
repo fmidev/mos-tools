@@ -493,7 +493,11 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	bl.Y(fy);
 	tr.Y(ly);
 
-	double* ddata = reader.Message().Values();
+	size_t len = ni * nj;
+	double* ddata = new double[len];
+	reader.Message().GetValues(ddata, &len);
+
+	assert(len == ni * nj);
 
 	if (!jpos)
 	{
@@ -549,7 +553,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	}
 
 	delete area;
-	free(ddata);
+	delete [] ddata;
 
 	double dx = reader.Message().iDirectionIncrement();
 	double dy = reader.Message().jDirectionIncrement();
