@@ -89,7 +89,8 @@ def ParseCommandLine(argv):
     parser.add_argument("-n", "--network-id", required=False, default=1, help="id of network, 1=wmo, 5=fmisid (default: 1)")
     parser.add_argument("-p", "--param", required=False, help="radon parameter name of target param")
     parser.add_argument("-s", "--season", required=False, help="season id, 1=winter, 3=summer")
-    parser.add_argument('file', nargs='+', help='Input file (csv)')
+    parser.add_argument("--delete", action="store_true", help="delete weights specified by the other arguments from database")
+    parser.add_argument('file', nargs='*', help='Input file (csv)')
 
     args = parser.parse_args()
 
@@ -290,6 +291,37 @@ def meta_from_name(filename,opts):
 
     return ret
 
+def delete_weights(cur, opts):
+    query = "DELETE FROM mos_weight WHERE mos_version_id = (SELECT id FROM mos_version WHERE label = %s)"
+    args = (opts.mos_label,)
+
+    if opts.analysis_hour is not None:
+        query += " AND analysis_hour = %s"
+        args += (opts.analysis_hour,)
+    if opts.station_id is not None:
+        nid = 1
+        if opts.network_id is not None:
+            nid = opts.network_id
+
+        query += " AND station_id = (SELECT id FROM station_network_mapping WHERE network_id = %s AND local_station_id = %s)"
+        args += (nid, opts.station_id)
+    if opts.param is not None:
+        query += " AND target_param_id = (SELECT id FROM param WHERE name = %s)"
+        args += (opts.param,)
+    if opts.season is not None:
+        query += " AND mos_period_id = %s"
+        args += (opts.season,)
+
+    print("Deleting all weights from database matching the following conditions:")
+    print("MOS label: {}\nanalysis_hour: {}\nstation: {}\nparam: {}\nseason: {}\n\n'None' means all values are accepted\n".format(opts.mos_label, opts.analysis_hour, opts.station_id, opts.param, opts.season))
+    confirm = input("To continue type yes: ")
+    if confirm == "yes":
+        cur.execute(query, args)
+        print("{} rows deleted".format(cur.rowcount))
+    else:
+        print("Aborting")
+
+
 def main():
 
     opts = ParseCommandLine(sys.argv)
@@ -303,12 +335,15 @@ def main():
     dsn = "user=%s password=%s host=%s dbname=%s port=%s" % ("mos_rw", password, os.environ["MOS_HOSTNAME"], "mos", 5432)
 
     conn = psycopg2.connect(dsn)
+    cur = conn.cursor()
     conn.autocommit = 1
+
+    if opts.delete:
+        delete_weights(cur, opts)
+        return
 
     psycopg2.extras.register_hstore(conn)
 
-    cur = conn.cursor()
-    
     if os.path.isdir(opts.file[0]):
         count = 0
         files = glob.glob('{}/station*.csv'.format(opts.file[0]))
