@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        23.7.24
+Version:        23.8.1
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -11,7 +11,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
-BuildRequires:  libfmidb-devel >= 22.1.14
+BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  eccodes-devel
 BuildRequires:  boost169-devel
 BuildRequires:  python3-scons
@@ -21,7 +21,7 @@ BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  fmt-devel
 BuildRequires:  postgresql13-devel
-Requires:	libfmidb >= 22.1.14
+Requires:	libfmidb >= 23.7.27
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
 Requires:       libpqxx >= 7.7.0
@@ -60,6 +60,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
+- New fmidb
 * Mon Jul 23 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
 - Add option to mos_factor_loader.py to delete weights from database
 * Fri Apr 14 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.4.14-1.fmi
