@@ -1,15 +1,16 @@
 #include "MosWorker.h"
-#include <sstream>
 #include <fstream>
+#include <sstream>
 
 #include "Result.h"
-#include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
 #ifdef DEBUG
 #include <boost/numeric/ublas/io.hpp>
 #endif
 
+extern std::map<int, std::map<std::string, Weights>> allWeights;
 boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
 
 std::string ToSQLInterval(int step)
@@ -132,7 +133,13 @@ void MosWorker::Write(const MosInfo& mosInfo, const Results& results)
 	std::cout << "Wrote file '" << fileName.str() << "'" << std::endl;
 }
 
-MosWorker::MosWorker() { itsMosDB = std::unique_ptr<MosDB>(MosDBPool::Instance()->GetConnection()); }
+MosWorker::MosWorker()
+{
+	if (allWeights.empty())
+	{
+		itsMosDB = std::unique_ptr<MosDB>(MosDBPool::Instance()->GetConnection());
+	}
+}
 MosWorker::~MosWorker()
 {
 	if (itsMosDB.get())
@@ -143,11 +150,25 @@ MosWorker::~MosWorker()
 
 bool MosWorker::Mosh(const MosInfo& mosInfo, int step)
 {
+	Weights weights;
+
 	// 1. Get weights
 
-	std::cout << "Fetching weights" << std::endl;
-
-	auto weights = itsMosDB->GetWeights(mosInfo, step);
+	if (allWeights.empty())
+	{
+		std::cout << "Fetching weights from MOS database" << std::endl;
+		weights = itsMosDB->GetWeights(mosInfo, step);
+	}
+	else
+	{
+		try
+		{
+			weights = allWeights.at(step).at(mosInfo.paramName);
+		}
+		catch (const std::exception& e)
+		{
+		}
+	}
 
 	if (weights.empty())
 	{

@@ -8,10 +8,13 @@ struct Options
 	int stepLength;
 	int stationId;
 	int networkId;
+	int producerId;
 
 	std::string mosLabel;
 	std::string paramName;
 	std::string analysisTime;
+	std::string weightsFile;
+	std::string sourceGeom;
 
 	bool trace;
 	bool disable0125;
@@ -23,9 +26,12 @@ struct Options
 	      stepLength(1),
 	      stationId(-1),
 	      networkId(1),
+	      producerId(131),
 	      mosLabel(""),
 	      paramName(""),
 	      analysisTime(""),
+	      weightsFile(""),
+	      sourceGeom("ECGLO0100"),
 	      trace(false),
 	      disable0125(false)
 	{
