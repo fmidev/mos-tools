@@ -501,7 +501,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	double* ddata = new double[len];
 	reader.Message().GetValues(ddata, &len);
 
-	assert(len == ni * nj);
+	assert(len == static_cast<size_t> (ni * nj));
 
 	if (!jpos)
 	{
