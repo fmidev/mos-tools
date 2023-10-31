@@ -1,5 +1,6 @@
 #include "MosInterpolator.h"
 #include "NFmiGrib.h"
+#include "Options.h"
 #include <NFmiLatLonArea.h>
 #include <NFmiMetTime.h>
 #include <NFmiQueryData.h>
@@ -8,6 +9,7 @@
 #include <NFmiStreamQueryData.h>
 #include <NFmiTimeList.h>
 
+extern Options opts;
 extern boost::posix_time::ptime ToPtime(const std::string& time, const std::string& timeMask);
 extern std::string GetEnv(const std::string& username);
 
@@ -104,7 +106,8 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 
 	int prevStep;
 
-	if (step > 144) {
+	if (step > 144)
+	{
 		prevStep = step - 6;
 	}
 	else if (step > 90)
@@ -152,7 +155,8 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 		value = d.second.InterpolatedValue(latlon);
 		assert(value == value);
 
-		if (value == kFloatMissing) continue;  // Try another geometry (if exists)
+		if (value == kFloatMissing)
+			continue;  // Try another geometry (if exists)
 
 		if (isCumulativeParameter || isCumulativeRadiationParameter)
 		{
@@ -553,12 +557,12 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	}
 
 	delete area;
-	delete [] ddata;
+	delete[] ddata;
 
 	double dx = reader.Message().iDirectionIncrement();
 	double dy = reader.Message().jDirectionIncrement();
 
-	double wantedGridResolution = 0.125;
+	const double wantedGridResolution = 0.125;
 
 	if (wantedGridResolution < dx)
 	{
@@ -575,7 +579,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	                            data.get()));
 #endif
 
-	if (dx != wantedGridResolution || dy != wantedGridResolution)
+	if (opts.disable0125 == false && (dx != wantedGridResolution || dy != wantedGridResolution))
 	{
 #ifdef DEBUG
 		std::cout << "Interpolating " << pl << " to " << wantedGridResolution << " degree grid" << std::endl;
@@ -652,7 +656,8 @@ double Declination(int step, const std::string& originTime)
 
 	double daydoy = orig_tm.tm_yday + hour_of_day / 24. - 32.;
 
-	if (daydoy < 0) daydoy += 365.;
+	if (daydoy < 0)
+		daydoy += 365.;
 
 	// 1) Lasketaan auringon deklinaatio (maan akselin ja maan kiertorataa
 	// kohtisuoran viivan välinen kulma)

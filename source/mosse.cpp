@@ -1,6 +1,7 @@
 #include "MosDB.h"
 #include "MosWorker.h"
 #include "NFmiRadonDB.h"
+#include "Options.h"
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <mutex>
@@ -12,37 +13,7 @@ std::mutex mut;
 static std::vector<std::string> params;
 static int step;
 
-struct Options
-{
-	int threadCount;
-	int startStep;
-	int endStep;
-	int stepLength;
-	int stationId;
-	int networkId;
-
-	std::string mosLabel;
-	std::string paramName;
-	std::string analysisTime;
-
-	bool trace;
-
-	Options()
-	    : threadCount(1),
-	      startStep(-1),
-	      endStep(-1),
-	      stepLength(1),
-	      stationId(-1),
-	      networkId(1),
-	      mosLabel(""),
-	      paramName(""),
-	      analysisTime(""),
-	      trace(false)
-	{
-	}
-};
-
-static Options opts;
+Options opts;
 
 void ParseCommandLine(int argc, char** argv)
 {
@@ -63,6 +34,7 @@ void ParseCommandLine(int argc, char** argv)
 		("parameter,p", po::value(&opts.paramName), "parameter name (radon-style), comma separated list")
 		("trace", "write trace information to log and database (default false)")
 		("analysis_time,a", po::value(&opts.analysisTime), "specify analysis time (SQL full timestamp, default=latest from database)")
+		("disable0125", "disable interpolation to 0.125 degree grid")
 		;
 	// clang-format on
 
@@ -86,6 +58,11 @@ void ParseCommandLine(int argc, char** argv)
 	if (opt.count("trace"))
 	{
 		opts.trace = true;
+	}
+
+	if (opt.count("disable0125"))
+	{
+		opts.disable0125 = true;
 	}
 
 	if (opts.startStep == -1 || opts.endStep == -1)
