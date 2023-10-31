@@ -2,7 +2,7 @@
 
 %define PACKAGENAME mos-tools
 Name:           %{PACKAGENAME}
-Version:        23.8.1
+Version:        23.10.31
 Release:        1%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
@@ -60,6 +60,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Tue Oct 31 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.31-1.fmi
+- Allow used to disable 0.125 deg interpolation
 * Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
 - New fmidb
 * Mon Jul 23 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
