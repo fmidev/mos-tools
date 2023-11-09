@@ -43,6 +43,7 @@ Requires:	fmt
 Requires:	oracle-instantclient-basic
 Requires:	postgresql15-libs
 Requires:	python3-psycopg2
+Requires:	boost169-program-options
 Provides:	mosse
 
 AutoReqProv:	no
