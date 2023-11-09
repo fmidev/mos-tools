@@ -18,11 +18,13 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
+BuildRequires:  libfmigrib
 BuildRequires:  libfmidb-devel >= 23.7.27
+BuildRequires:  libfmidb
 BuildRequires:  eccodes-devel
+BuildRequires:  eccodes
 BuildRequires:  boost169-devel
 BuildRequires:  python3-scons
-BuildRequires:  libfmidb-devel
 BuildRequires:  gcc-c++ >= 8.5.0
 BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
 BuildRequires:  smartmet-library-gis-devel
