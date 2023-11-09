@@ -49,7 +49,7 @@ librarypaths = []
 librarypaths.append('/usr/lib64')
 librarypaths.append('/usr/lib64/oracle')
 librarypaths.append('/usr/lib64/boost169')
-librarypaths.append('/usr/pgsql-13/lib')
+librarypaths.append('/usr/pgsql-15/lib')
 
 env.Append(LIBPATH = librarypaths)
 
