@@ -1,9 +1,16 @@
+%if !0%{?version:1}
+%define version 23.10.31
+%endif
+
+%if !0%{?release:1}
+%define release 1
+%endif
+
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
-%define PACKAGENAME mos-tools
-Name:           %{PACKAGENAME}
-Version:        23.10.31
-Release:        1%{dist}.fmi
+Name:           mos-tools
+Version:        %{version}
+Release:        %{release}%{dist}.fmi
 Summary:        Tools for FMI mos
 Group:          Applications/System
 License:        FMI
@@ -16,11 +23,12 @@ BuildRequires:  eccodes-devel
 BuildRequires:  boost169-devel
 BuildRequires:  python3-scons
 BuildRequires:  libfmidb-devel
-BuildRequires:  gcc-c++ >= 4.8.3 
+BuildRequires:  gcc-c++ >= 8.5.0
 BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  fmt-devel
-BuildRequires:  postgresql13-devel
+BuildRequires:  postgresql15-devel
+BuildRequires:  make
 Requires:	libfmidb >= 23.7.27
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
@@ -31,7 +39,7 @@ Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
 Requires:	fmt
 Requires:	oracle-instantclient-basic
-Requires:	postgresql13-libs
+Requires:	postgresql15-libs
 Requires:	python3-psycopg2
 Provides:	mosse
 
@@ -41,7 +49,7 @@ AutoReqProv:	no
 mos-tools
 
 %prep
-%setup -q -n "%{PACKAGENAME}"
+%setup -q -n "mos-tools"
 
 %build
 make %{?_smp_mflags}

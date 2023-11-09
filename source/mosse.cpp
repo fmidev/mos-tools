@@ -52,7 +52,7 @@ void ParseCommandLine(int argc, char** argv)
 		std::cout << desc;
 		std::cout << std::endl << "Examples:" << std::endl;
 		std::cout << "  mosse -s 3 -e 6 -l 3 -m MOS_ECMWF_r144 --trace" << std::endl;
-		exit(1);
+		exit(0);
 	}
 
 	if (opt.count("trace"))
