@@ -8,6 +8,12 @@
 
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
+%if %{distnum} == 8
+%define boost boost169
+%else
+%define boost boost
+%endif
+
 Name:           mos-tools
 Version:        %{version}
 Release:        %{release}%{dist}.fmi
@@ -23,7 +29,7 @@ BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  libfmidb
 BuildRequires:  eccodes-devel
 BuildRequires:  eccodes
-BuildRequires:  boost169-devel
+BuildRequires:  %{boost}-devel
 BuildRequires:  python3-scons
 BuildRequires:  gcc-c++ >= 8.5.0
 BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
@@ -31,6 +37,7 @@ BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  fmt-devel
 BuildRequires:  postgresql15-devel
 BuildRequires:  make
+BuildRequires:  python3-distro
 Requires:	libfmidb >= 23.7.27
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
@@ -43,7 +50,7 @@ Requires:	fmt
 Requires:	oracle-instantclient-basic
 Requires:	postgresql15-libs
 Requires:	python3-psycopg2
-Requires:	boost169-program-options
+Requires:	%{boost}-program-options
 Provides:	mosse
 
 AutoReqProv:	no

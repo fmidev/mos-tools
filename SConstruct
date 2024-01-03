@@ -2,6 +2,7 @@
 # SConscript for neons-tools
 
 import os
+import distro
 
 AddOption(
     '--debug-build',
@@ -16,6 +17,8 @@ env = Environment()
 
 DEBUG = GetOption('debug-build')
 RELEASE = (not DEBUG)
+OS_NAME = distro.name()
+OS_VERSION = float(distro.version())
 
 # Assign compilers
 
@@ -48,7 +51,9 @@ librarypaths = []
 
 librarypaths.append('/usr/lib64')
 librarypaths.append('/usr/lib64/oracle')
-librarypaths.append('/usr/lib64/boost169')
+
+if OS_VERSION < 9:
+    librarypaths.append('/usr/lib64/boost169')
 librarypaths.append('/usr/pgsql-15/lib')
 
 env.Append(LIBPATH = librarypaths)
@@ -118,7 +123,8 @@ cflags.append('-std=c++17')
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
 
-env.AppendUnique(CCFLAGS=('-isystem', '/usr/include/boost169'))
+if OS_VERSION < 9:
+    env.AppendUnique(CCFLAGS=('-isystem', '/usr/include/boost169'))
 
 # Linker flags
 
