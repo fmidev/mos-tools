@@ -1,5 +1,5 @@
 %if !0%{?version:1}
-%define version 23.10.31
+%define version 24.4.24
 %endif
 
 %if !0%{?release:1}
@@ -25,7 +25,7 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmigrib
-BuildRequires:  libfmidb-devel >= 23.7.27
+BuildRequires:  libfmidb-devel >= 24.4.18
 BuildRequires:  libfmidb
 BuildRequires:  eccodes-devel
 BuildRequires:  eccodes
@@ -38,7 +38,7 @@ BuildRequires:  fmt-devel
 BuildRequires:  postgresql15-devel
 BuildRequires:  make
 BuildRequires:  python3-distro
-Requires:	libfmidb >= 23.7.27
+Requires:	libfmidb >= 24.4.18
 Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
 Requires:       libpqxx >= 7.7.0
@@ -47,7 +47,8 @@ Requires:       smartmet-library-newbase >= 21.12.7
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
 Requires:	fmt
-Requires:	oracle-instantclient-basic
+Requires:	oracle-instantclient19.22-basic
+Requires:	fmi-tnsnames-oracle
 Requires:	postgresql15-libs
 Requires:	python3-psycopg2
 Requires:	%{boost}-program-options
@@ -78,6 +79,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Wed Apr 24 2024 Ville Kuvaja <ville.kuvaja@fmi.fi> - 24.4.24-1.fmi
+- oracle-instantclient19.22 and fmi-tnsnames-oracle added
 * Tue Oct 31 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.31-1.fmi
 - Allow used to disable 0.125 deg interpolation
 * Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
