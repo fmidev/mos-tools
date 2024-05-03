@@ -85,12 +85,6 @@ double MosInterpolator::GetValue(const MosInfo& mosInfo, const Station& station,
 		return kFloatMissing;
 	}
 
-	// The factor for T-MEAN-K is zero for leadtimes < 150
-	if (step < 150 && pl.paramName == "T-MEAN-K")
-	{
-		return kFloatMissing;
-	}
-
 	NFmiPoint latlon(station.longitude, station.latitude);
 
 	// These are cumulative parameters
@@ -350,8 +344,11 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 			std::cout << "Adjusting T-MEAN-K step from " << origStep << " to " << step << std::endl;
 		}
 
-		// T-MEAN-K does not exist for 1h steps
-		else if (step <= 90)
+		// T-MEAN-K does not exist for 1h steps; read the closest T-MEAN step instead
+		// 90 + 12 comes from the fact that we read the data from previous forecast
+		// which means +12h to leadtime
+
+		else if (step <= 90 + 12)
 		{
 			step -= (step % 3);
 			std::cout << "Adjusting T-MEAN-K step from " << origStep << " to " << step << std::endl;
