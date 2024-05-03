@@ -304,7 +304,8 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 			throw std::runtime_error("Previous timestep data requested for time step 0");
 		}
 
-		if (mosInfo.label == "MOS_ECMWF_040422" && step <= 90 && paramName != "T-MEAN-K")
+		// T-MEAN-K only in 3h steps
+		if (step <= 90 && paramName != "T-MEAN-K")
 		{
 			step += 1 * pl.stepAdjustment;
 		}
@@ -501,7 +502,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	double* ddata = new double[len];
 	reader.Message().GetValues(ddata, &len);
 
-	assert(len == static_cast<size_t> (ni * nj));
+	assert(len == static_cast<size_t>(ni * nj));
 
 	if (!jpos)
 	{
