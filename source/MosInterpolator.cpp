@@ -440,7 +440,7 @@ datas ToQueryInfo(const ParamLevel& pl, int step, const std::string& fileName, c
 	else
 	{
 		std::cout << "Reading file '" << fileName << "' " << offset << ":" << length << " (" << pl << ")" << std::endl;
-		reader.ReadMessage(std::stoi(offset), std::stoi(length));
+		reader.ReadMessage(std::stol(offset), std::stol(length));
 	}
 
 	long dataDate = reader.Message().DataDate();
