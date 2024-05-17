@@ -34,6 +34,7 @@ BuildRequires:  python3-scons
 BuildRequires:  gcc-c++ >= 8.5.0
 BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
 BuildRequires:  smartmet-library-gis-devel
+BuildRequires:  smartmet-library-macgyver
 BuildRequires:  fmt-devel
 BuildRequires:  postgresql15-devel
 BuildRequires:  make
