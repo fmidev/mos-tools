@@ -29,8 +29,8 @@ rpm:    clean
 	mkdir -p $(rpmsourcedir) ; \
         if [ -a $(PROG).spec ]; \
         then \
-          tar -C ../ --exclude .svn \
-                   -cf $(rpmsourcedir)/$(PROG).tar $(PROG) ; \
+          tar --exclude .svn --transform "s,^,$(PROG)/," \
+                   -cf $(rpmsourcedir)/$(PROG).tar * ; \
           gzip -f $(rpmsourcedir)/$(PROG).tar ; \
           rpmbuild -ta $(rpmsourcedir)/$(PROG).tar.gz ; \
           rm -f $(rpmsourcedir)/$(LIB).tar.gz ; \
