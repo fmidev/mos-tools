@@ -5,6 +5,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/program_options.hpp>
+#include <filesystem>
 #include <iostream>
 #include <mutex>
 #include <string>
@@ -230,7 +231,7 @@ void ReadWeights(const MosInfo& mosInfo, std::istream& in)
 
 void ReadWeightsFromFile(const MosInfo& mosInfo)
 {
-	if (!boost::filesystem::exists(opts.weightsFile))
+	if (!std::filesystem::exists(opts.weightsFile))
 	{
 		std::cerr << "File '" << opts.weightsFile << "' does not exist\n";
 		exit(1);
