@@ -5,6 +5,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <iostream>
 #include <mutex>
 #include <string>
