@@ -53,6 +53,7 @@ Requires:	fmi-tnsnames-oracle
 Requires:	postgresql15-libs
 Requires:	python3-psycopg2
 Requires:	%{boost}-program-options
+Requires:	%{boost}-filesystem
 Provides:	mosse
 
 AutoReqProv:	no
