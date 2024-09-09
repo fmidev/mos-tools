@@ -32,7 +32,7 @@ BuildRequires:  eccodes
 BuildRequires:  %{boost}-devel
 BuildRequires:  python3-scons
 BuildRequires:  gcc-c++ >= 8.5.0
-BuildRequires:  smartmet-library-newbase-devel >= 21.12.7
+BuildRequires:  smartmet-library-newbase-devel >= 24.8.21
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  smartmet-library-macgyver
 BuildRequires:  fmt-devel
@@ -44,10 +44,10 @@ Requires:	libfmigrib >= 19.9.20
 Requires:       jasper-libs
 Requires:       libpqxx >= 7.7.0
 Requires:	eccodes
-Requires:       smartmet-library-newbase >= 21.12.7
+Requires:       smartmet-library-newbase >= 24.8.21
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
-Requires:	fmt
+Requires:	fmt-libs
 Requires:	oracle-instantclient19.22-basic
 Requires:	fmi-tnsnames-oracle
 Requires:	postgresql15-libs
