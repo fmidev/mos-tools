@@ -286,6 +286,11 @@ std::vector<datas> MosInterpolator::GetData(const MosInfo& mosInfo, const ParamL
 		paramName = "NH-0TO1";
 	}
 
+	else if (paramName == "T-MEAN-K")
+	{
+		producerId = 134;
+	}
+
 	if (pl.stepAdjustment < 0)
 	{
 #ifdef DEBUG
