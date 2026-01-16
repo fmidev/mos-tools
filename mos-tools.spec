@@ -47,7 +47,7 @@ Requires:	eccodes
 Requires:       smartmet-library-newbase >= 24.8.21
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
-Requires:	fmt-libs
+Requires:	fmt-libs >= 11.2
 Requires:	oracle-instantclient19.22-basic
 Requires:	fmi-tnsnames-oracle
 Requires:	postgresql15-libs
