@@ -54,6 +54,11 @@ Requires:	postgresql15-libs
 Requires:	python3-psycopg2
 Requires:	%{boost}-program-options
 Requires:	%{boost}-filesystem
+Requires:	%{boost}-date-time
+Requires:	%{boost}-program-options
+Requires:	%{boost}-iostreams
+Requires:	%{boost}-regex
+Requires:	%{boost}-system
 Provides:	mosse
 
 AutoReqProv:	no

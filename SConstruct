@@ -75,7 +75,7 @@ env.Append(LIBS = libraries)
 #env.Append(LIBS=env.File('/usr/lib64/libfmigrib.a'))
 env.Append(LIBS=['fmigrib', 'eccodes'])
 
-boost_libraries = [ 'boost_date_time', 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
+boost_libraries = [ 'boost_date_time', 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams' ]
 
 env.Append(LIBS = boost_libraries)
 
