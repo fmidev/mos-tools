@@ -9,5 +9,5 @@ RUN dnf -y install dnf-plugins-core && \
     dnf config-manager --set-enabled powertools && \
     dnf -y module disable postgresql && \
     dnf config-manager --setopt="epel.exclude=eccodes*" --save && \
-    dnf -y install mos-tools && \
+    dnf --allowerasing -y install mos-tools && \
     dnf -y clean all
