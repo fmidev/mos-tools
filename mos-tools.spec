@@ -1,5 +1,5 @@
 %if !0%{?version:1}
-%define version 24.4.24
+%define version 26.4.21
 %endif
 
 %if !0%{?release:1}
@@ -35,7 +35,7 @@ BuildRequires:  gcc-c++ >= 8.5.0
 BuildRequires:  smartmet-library-newbase-devel >= 24.8.21
 BuildRequires:  smartmet-library-gis-devel
 BuildRequires:  smartmet-library-macgyver
-BuildRequires:  fmt-devel
+BuildRequires:  fmt-devel >= 12.1
 BuildRequires:  postgresql15-devel
 BuildRequires:  make
 BuildRequires:  python3-distro
@@ -47,7 +47,7 @@ Requires:	eccodes
 Requires:       smartmet-library-newbase >= 24.8.21
 Requires:       smartmet-library-gis
 Requires:       smartmet-library-macgyver
-Requires:	fmt-libs >= 11.2
+Requires:	fmt-libs >= 12.1
 Requires:	oracle-instantclient19.22-basic
 Requires:	fmi-tnsnames-oracle
 Requires:	postgresql15-libs
@@ -86,6 +86,8 @@ rm -rf %{buildroot}
 %{_bindir}/mos_factor_loader.py
 
 %changelog
+* Tue Apr 21 2026 Mikko Partio <mikko.partio@fmi.fi> - 26.4.21-1.fmi
+- New fmt
 * Wed Apr 24 2024 Ville Kuvaja <ville.kuvaja@fmi.fi> - 24.4.24-1.fmi
 - oracle-instantclient19.22 and fmi-tnsnames-oracle added
 * Tue Oct 31 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.31-1.fmi
